@@ -7,6 +7,9 @@ import { WeeklyActivity } from "@/components/dashboard/weekly-activity"
 import { CampaignTables } from "@/components/dashboard/campaign-tables"
 import { PhoneCallLog } from "@/components/dashboard/phone-call-log"
 import { RecentLeadsTable } from "@/components/dashboard/recent-leads-table"
+import { DataImport } from "@/components/dashboard/data-import"
+import { ImportedCallsTable } from "@/components/dashboard/imported-calls-table"
+import { ImportedContactsTable } from "@/components/dashboard/imported-contacts-table"
 import { getDashboardData } from "@/lib/gravity-forms"
 import { fetchGoogleAdsSummary } from "@/lib/google-ads"
 import { facebookAdsMetrics } from "@/lib/dashboard-data"
@@ -194,6 +197,20 @@ export default async function DashboardPage({
         {/* Recent Leads */}
         <section className="mt-4" aria-label="Recent leads">
           <RecentLeadsTable leads={data?.recentLeads ?? []} />
+        </section>
+
+        {/* Imported Data Section */}
+        <section className="mt-8 space-y-4" aria-label="Imported data">
+          <h2 className="text-lg font-semibold text-foreground">Imported Data</h2>
+          
+          {/* Import Tool */}
+          <DataImport />
+          
+          {/* Imported Call Records (shows only if data exists) */}
+          <ImportedCallsTable />
+          
+          {/* Imported 17hats Contacts (shows only if data exists) */}
+          <ImportedContactsTable />
         </section>
 
         {/* Footer */}
