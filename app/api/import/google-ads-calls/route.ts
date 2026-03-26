@@ -130,41 +130,38 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Insert records, skip duplicates based on start_time + phone number
-    const { data, error } = await supabase
+    // Get count before import to calculate new records
+    const { count: beforeCount } = await supabase
       .from("google_ads_calls")
-      .upsert(records, {
-        onConflict: "start_time,caller_phone_number",
-        ignoreDuplicates: true,
-      })
-      .select()
+      .select("*", { count: "exact", head: true })
 
-    if (error) {
-      // If upsert fails due to no unique constraint, just insert
-      const { data: insertData, error: insertError } = await supabase
+    // Insert records one by one, skipping duplicates
+    let imported = 0
+    let skipped = 0
+
+    for (const record of records) {
+      const { error } = await supabase
         .from("google_ads_calls")
-        .insert(records)
-        .select()
+        .insert(record)
 
-      if (insertError) {
-        console.error("Import error:", insertError)
-        return NextResponse.json(
-          { error: "Failed to import records", details: insertError.message },
-          { status: 500 }
-        )
+      if (error) {
+        // Duplicate key error - skip this record
+        if (error.code === "23505") {
+          skipped++
+        } else {
+          console.error("Insert error for record:", error)
+        }
+      } else {
+        imported++
       }
-
-      return NextResponse.json({
-        success: true,
-        imported: insertData?.length || records.length,
-        message: `Successfully imported ${insertData?.length || records.length} call records`,
-      })
     }
 
     return NextResponse.json({
       success: true,
-      imported: data?.length || records.length,
-      message: `Successfully imported ${data?.length || records.length} call records`,
+      imported,
+      skipped,
+      total: records.length,
+      message: `Imported ${imported} new call records${skipped > 0 ? `, skipped ${skipped} duplicates` : ""}`,
     })
   } catch (error) {
     console.error("Import error:", error)
