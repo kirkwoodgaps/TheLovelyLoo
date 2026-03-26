@@ -3,8 +3,8 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 let client: ReturnType<typeof createSupabaseClient> | null = null
 
 /**
- * Creates a Supabase client for browser-side use.
- * Uses singleton pattern to prevent multiple instances.
+ * Creates a Supabase client for browser-side use in React components.
+ * Uses singleton pattern to prevent multiple client instances.
  */
 export function createClient() {
   if (client) return client
