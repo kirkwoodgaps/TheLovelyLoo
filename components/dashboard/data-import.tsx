@@ -131,7 +131,7 @@ function ImportDropzone({
             </p>
             {result.skipped !== undefined && result.skipped > 0 && (
               <p className="mt-1 text-xs opacity-75">
-                {result.skipped} records skipped (missing email/phone)
+                {result.skipped} duplicate records skipped
               </p>
             )}
           </div>
@@ -166,6 +166,7 @@ export function DataImport() {
         setGoogleAdsResult({
           success: true,
           imported: data.imported,
+          skipped: data.skipped,
           message: data.message,
         })
       } else {
