@@ -2,7 +2,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Creates a Supabase client for server-side use (API routes, server actions).
- * This uses the service role or anon key directly without cookie-based auth.
+ * Uses the service role key for full access or anon key for public access.
  */
 export async function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
