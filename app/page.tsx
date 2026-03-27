@@ -5,7 +5,6 @@ import { AdSpendChart } from "@/components/dashboard/ad-spend-chart"
 import { LeadSourcesChart } from "@/components/dashboard/lead-sources-chart"
 import { WeeklyActivity } from "@/components/dashboard/weekly-activity"
 import { CampaignTables } from "@/components/dashboard/campaign-tables"
-import { PhoneCallLog } from "@/components/dashboard/phone-call-log"
 import { RecentLeadsTable } from "@/components/dashboard/recent-leads-table"
 import { DataImport } from "@/components/dashboard/data-import"
 import { ImportedCallsTable } from "@/components/dashboard/imported-calls-table"
@@ -188,11 +187,6 @@ export default async function DashboardPage({
             googleMetrics={googleMetrics}
             facebookMetrics={facebookAdsMetrics}
           />
-        </section>
-
-        {/* Phone Call Report */}
-        <section className="mt-4" aria-label="Phone call report">
-          <PhoneCallLog calls={filteredCallRecords} />
         </section>
 
         {/* Recent Leads */}
