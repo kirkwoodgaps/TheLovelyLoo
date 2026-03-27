@@ -18,7 +18,7 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
   campaign: ["campaign", "campaign name"],
   cost: ["cost", "spend", "cost (usd)", "amount spent", "cost (all)"],
   clicks: ["clicks", "link clicks"],
-  impressions: ["impressions", "impr", "impr."],
+  impressions: ["impressions", "impr", "impr.", "local reach (impressions)", "reach (impressions)"],
   conversions: ["conversions", "conv", "conv.", "all conv.", "all conversions", "results"],
   ctr: ["ctr", "click-through rate", "click through rate"],
   cost_per_conversion: ["cost / conv.", "cost per conversion", "cost/conv", "cost per result"],
