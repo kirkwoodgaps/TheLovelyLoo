@@ -244,11 +244,6 @@ export default async function DashboardPage({
           <WeeklyActivity data={data?.weeklyData ?? []} />
         </section>
 
-        {/* GA4 Analytics */}
-        <section className="mt-6" aria-label="Google Analytics">
-          <GA4Card data={ga4Data} isConnected={googleConnected} />
-        </section>
-
         {/* Matched Contacts Section */}
         <section className="mt-8" aria-label="Matched contacts">
           <MatchedContactsTable />
@@ -271,6 +266,11 @@ export default async function DashboardPage({
         {/* Recent Leads */}
         <section className="mt-8" aria-label="Recent leads">
           <RecentLeadsTable leads={data?.recentLeads ?? []} />
+        </section>
+
+        {/* GA4 Analytics */}
+        <section className="mt-8" aria-label="Google Analytics">
+          <GA4Card data={ga4Data} isConnected={googleConnected} />
         </section>
 
         {/* Footer */}
