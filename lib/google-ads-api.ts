@@ -66,36 +66,35 @@ async function queryGoogleAds(
   query: string
 ): Promise<any[]> {
   const customerId = credentials.customerId.replace(/-/g, "")
-  const url = `https://googleads.googleapis.com/v18/customers/${customerId}/googleAds:searchStream`
+  // Use v17 API with search endpoint (not searchStream)
+  const url = `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:search`
 
+  console.log("[v0] Google Ads API: Querying URL:", url)
+  
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${accessToken}`,
       "developer-token": credentials.developerToken,
       "Content-Type": "application/json",
+      "login-customer-id": customerId, // Required for some accounts
     },
     body: JSON.stringify({ query }),
   })
 
+  console.log("[v0] Google Ads API: Response status:", response.status)
+  
   if (!response.ok) {
     const error = await response.text()
+    console.log("[v0] Google Ads API: Error response:", error.substring(0, 500))
     throw new Error(`Google Ads API error: ${error}`)
   }
 
   const data = await response.json()
+  console.log("[v0] Google Ads API: Response data keys:", Object.keys(data))
   
-  // searchStream returns an array of result batches
-  const results: any[] = []
-  if (Array.isArray(data)) {
-    for (const batch of data) {
-      if (batch.results) {
-        results.push(...batch.results)
-      }
-    }
-  }
-  
-  return results
+  // search returns results directly
+  return data.results || []
 }
 
 export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
