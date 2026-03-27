@@ -138,10 +138,6 @@ export async function fetchGA4Data(
     )
 
     if (!dailyResponse.ok || !sourcesResponse.ok || !pagesResponse.ok || !overallResponse.ok) {
-      const errorBody = await dailyResponse.text()
-      console.error("[v0] GA4 API error - Status:", dailyResponse.status, "Body:", errorBody)
-      console.error("[v0] GA4 Property ID used:", propertyId)
-      console.error("[v0] GA4 Date range:", startDate, "to", endDate)
       return null
     }
 
