@@ -12,6 +12,9 @@ interface CallRecord {
   call_source: string
   call_type: string
   campaign: string
+  caller_name: string | null
+  inquiry_topic: string | null
+  inquiry_notes: string | null
 }
 
 function parseCSV(csv: string): Record<string, string>[] {
@@ -143,6 +146,9 @@ export async function POST(request: NextRequest) {
         call_source: row["Call source"] || row["call_source"] || "",
         call_type: row["Call type"] || row["call_type"] || "",
         campaign: row["Campaign"] || row["campaign"] || "",
+        caller_name: row["Name"] || row["Caller Name"] || row["name"] || null,
+        inquiry_topic: row["Inquiry Topic"] || row["Topic"] || row["inquiry_topic"] || null,
+        inquiry_notes: row["Inquiry Notes"] || row["Notes"] || row["inquiry_notes"] || null,
       }
       return record
     })
