@@ -98,7 +98,12 @@ export async function POST(request: NextRequest) {
     }
 
     const csvText = await file.text()
+    console.log("[v0] CSV first 500 chars:", csvText.substring(0, 500))
+    
     const rows = parseCSV(csvText)
+    console.log("[v0] Parsed rows count:", rows.length)
+    console.log("[v0] First row keys:", rows[0] ? Object.keys(rows[0]) : "no rows")
+    console.log("[v0] First row values:", rows[0] ? JSON.stringify(rows[0]) : "no rows")
 
     if (rows.length === 0) {
       return NextResponse.json({ error: "No data found in CSV" }, { status: 400 })
@@ -108,25 +113,30 @@ export async function POST(request: NextRequest) {
     // Expected columns from Google Ads export:
     // Start time, Duration (seconds), Caller country code, Caller area code, 
     // Caller phone number, Recording, Status, Call source, Call type, Campaign
-    const records: CallRecord[] = rows.map((row) => ({
-      start_time: parseDateTime(
-        row["Start time"] || row["Start Time"] || row["start_time"] || ""
-      ),
-      duration_seconds: parseDuration(
-        row["Duration (seconds)"] || row["Duration"] || row["duration_seconds"] || row["duration"] || "0"
-      ),
-      caller_country_code:
-        row["Caller country code"] || row["Country code"] || row["caller_country_code"] || "",
-      caller_area_code:
-        row["Caller area code"] || row["Area code"] || row["caller_area_code"] || "",
-      caller_phone_number:
-        row["Caller phone number"] || row["Phone number"] || row["caller_phone_number"] || "",
-      recording_url: row["Recording"] || row["recording_url"] || null,
-      status: row["Status"] || row["status"] || "",
-      call_source: row["Call source"] || row["call_source"] || "",
-      call_type: row["Call type"] || row["call_type"] || "",
-      campaign: row["Campaign"] || row["campaign"] || "",
-    }))
+    const records: CallRecord[] = rows.map((row) => {
+      const record = {
+        start_time: parseDateTime(
+          row["Start time"] || row["Start Time"] || row["start_time"] || ""
+        ),
+        duration_seconds: parseDuration(
+          row["Duration (seconds)"] || row["Duration"] || row["duration_seconds"] || row["duration"] || "0"
+        ),
+        caller_country_code:
+          row["Caller country code"] || row["Country code"] || row["caller_country_code"] || "",
+        caller_area_code:
+          row["Caller area code"] || row["Area code"] || row["caller_area_code"] || "",
+        caller_phone_number:
+          row["Caller phone number"] || row["Phone number"] || row["caller_phone_number"] || "",
+        recording_url: row["Recording"] || row["recording_url"] || null,
+        status: row["Status"] || row["status"] || "",
+        call_source: row["Call source"] || row["call_source"] || "",
+        call_type: row["Call type"] || row["call_type"] || "",
+        campaign: row["Campaign"] || row["campaign"] || "",
+      }
+      return record
+    })
+    
+    console.log("[v0] First mapped record:", JSON.stringify(records[0]))
 
     const supabase = await createClient()
 
