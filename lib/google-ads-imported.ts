@@ -55,11 +55,12 @@ export async function fetchImportedGoogleAdsMetrics(): Promise<ImportedGoogleAds
   try {
     const supabase = await createClient()
     
+    // Supabase has a 1000 row default limit, use range to get all rows
     const { data: metrics, error } = await supabase
       .from("google_ads_metrics")
       .select("*")
       .order("date", { ascending: true })
-      .limit(10000) // Ensure we get all rows
+      .range(0, 9999) // Get up to 10000 rows
 
     if (error) {
       console.error("Error fetching imported Google Ads metrics:", error)
