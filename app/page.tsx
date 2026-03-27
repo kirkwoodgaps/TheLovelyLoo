@@ -204,30 +204,27 @@ export default async function DashboardPage({
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         <DashboardHeader sources={sources} />
 
-        {/* KPI Cards */}
+        {/* KPI Cards - Lifetime Totals and Selected Period */}
         <section className="mt-6" aria-label="Key performance indicators">
           <KpiCards data={kpi} />
         </section>
 
-        {/* Charts Row */}
-        <section
-          className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3"
-          aria-label="Charts"
-        >
-          <div className="lg:col-span-2">
-            <LeadsOverTimeChart data={monthlyLeadsData} />
-          </div>
-          <div>
-            <LeadSourcesChart data={[...(data?.formBreakdown ?? [])].sort((a, b) => b.value - a.value)} />
-          </div>
+        {/* Leads Over Time */}
+        <section className="mt-6" aria-label="Leads over time">
+          <LeadsOverTimeChart data={monthlyLeadsData} />
         </section>
 
-        {/* Weekly Activity */}
-        <section className="mt-4" aria-label="Weekly activity">
+        {/* Leads by Form */}
+        <section className="mt-4" aria-label="Leads by form">
+          <LeadSourcesChart data={[...(data?.formBreakdown ?? [])].sort((a, b) => b.value - a.value)} />
+        </section>
+
+        {/* This Week */}
+        <section className="mt-4" aria-label="This week activity">
           <WeeklyActivity data={data?.weeklyData ?? []} />
         </section>
 
-        {/* Campaign Performance */}
+        {/* Google Ads Campaign Performance */}
         <section className="mt-4" aria-label="Campaign performance">
           <CampaignTables googleMetrics={googleMetrics} />
         </section>

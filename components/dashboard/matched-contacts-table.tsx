@@ -162,7 +162,7 @@ export function MatchedContactsTable() {
             <div>
               <CardTitle className="text-base font-semibold">Matched Contacts</CardTitle>
               <CardDescription>
-                17hats contacts matched to Call Records or Website form leads by phone number
+                These contacts found in 17hats are also in either Google Call Records or Website Form Leads.
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={fetchMatches}>
@@ -187,7 +187,7 @@ export function MatchedContactsTable() {
           <div>
             <CardTitle className="text-base font-semibold">Matched Contacts</CardTitle>
             <CardDescription>
-              17hats contacts matched to Call Records or Recent Leads by phone number
+              These contacts found in 17hats are also in either Google Call Records or Website Form Leads.
             </CardDescription>
           </div>
           <div className="flex items-center gap-3">
