@@ -9,9 +9,20 @@ import type { SearchConsoleData } from "@/lib/search-console"
 interface SearchConsoleCardProps {
   data: SearchConsoleData | null
   isConnected: boolean
+  currentRange?: string
 }
 
-export function SearchConsoleCard({ data, isConnected }: SearchConsoleCardProps) {
+const rangeLabels: Record<string, string> = {
+  "7days": "Last 7 days",
+  "30days": "Last 30 days",
+  "3months": "Last 3 months",
+  "6months": "Last 6 months",
+  "12months": "Last 12 months",
+  "alltime": "All time",
+}
+
+export function SearchConsoleCard({ data, isConnected, currentRange = "6months" }: SearchConsoleCardProps) {
+  const rangeLabel = rangeLabels[currentRange] || "Last 6 months"
   if (!isConnected) {
     return (
       <Card className="border-border/60 shadow-sm">
@@ -62,7 +73,7 @@ export function SearchConsoleCard({ data, isConnected }: SearchConsoleCardProps)
           <Search className="h-5 w-5" />
           Google Search Console
         </CardTitle>
-        <CardDescription>Organic search performance</CardDescription>
+        <CardDescription>Organic search performance ({rangeLabel})</CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
         {/* Summary Metrics */}

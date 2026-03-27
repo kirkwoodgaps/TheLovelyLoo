@@ -11,11 +11,13 @@ import { ImportedCallsTable } from "@/components/dashboard/imported-calls-table"
 import { ImportedContactsTable } from "@/components/dashboard/imported-contacts-table"
 import { MatchedContactsTable } from "@/components/dashboard/matched-contacts-table"
 import { GA4Card } from "@/components/dashboard/ga4-card"
+import { SearchConsoleCard } from "@/components/dashboard/search-console-card"
 import { getDashboardData } from "@/lib/gravity-forms"
 import { fetchGoogleAdsSummary } from "@/lib/google-ads"
 import { fetchGoogleAdsData } from "@/lib/google-ads-api"
 import { fetchImportedGoogleAdsMetrics } from "@/lib/google-ads-imported"
 import { fetchGA4Data } from "@/lib/ga4"
+import { fetchSearchConsoleData } from "@/lib/search-console"
 import { isConnected } from "@/lib/google-oauth"
 
 const RANGE_CONFIG: Record<string, { days: number; label: string }> = {
@@ -48,6 +50,7 @@ export default async function DashboardPage({
     googleAdsApiResult, 
     googleAdsImportedResult,
     ga4Result,
+    searchConsoleResult,
     googleConnectedResult,
   ] = await Promise.allSettled([
     getDashboardData(),
@@ -56,6 +59,8 @@ export default async function DashboardPage({
     fetchImportedGoogleAdsMetrics(), // CSV imported data (second preference)
     // GA4 - using property ID
     fetchGA4Data(process.env.GA4_PROPERTY_ID || "", startDate, endDate),
+    // Search Console
+    fetchSearchConsoleData(process.env.SEARCH_CONSOLE_SITE_URL || "", startDate, endDate),
     isConnected("google_analytics"),
   ])
 
@@ -64,6 +69,7 @@ export default async function DashboardPage({
   const googleAdsFromApi = googleAdsApiResult.status === "fulfilled" ? googleAdsApiResult.value : null
   const googleAdsFromImport = googleAdsImportedResult.status === "fulfilled" ? googleAdsImportedResult.value : null
   const ga4Data = ga4Result.status === "fulfilled" ? ga4Result.value : null
+  const searchConsoleData = searchConsoleResult.status === "fulfilled" ? searchConsoleResult.value : null
   const googleConnected = googleConnectedResult.status === "fulfilled" ? googleConnectedResult.value : false
   
   // Priority: Direct API > Imported CSV > Spreadsheet
@@ -217,6 +223,7 @@ export default async function DashboardPage({
     { name: "Gravity Forms", status: data ? "live" as const : "error" as const },
     { name: "Google Ads", status: googleAds?.hasData ? "live" as const : "pending" as const },
     { name: "GA4", status: ga4Data?.hasData ? "live" as const : googleConnected ? "pending" as const : "error" as const },
+    { name: "Search Console", status: searchConsoleData?.hasData ? "live" as const : googleConnected ? "pending" as const : "error" as const },
   ]
 
   return (
@@ -274,9 +281,10 @@ export default async function DashboardPage({
           <RecentLeadsTable leads={data?.recentLeads ?? []} />
         </section>
 
-        {/* GA4 Analytics */}
-        <section id="analytics" className="mt-8" aria-label="Google Analytics">
+        {/* GA4 Analytics & Search Console */}
+        <section id="analytics" className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Google Analytics">
           <GA4Card data={ga4Data} isConnected={googleConnected} currentRange={range} />
+          <SearchConsoleCard data={searchConsoleData} isConnected={googleConnected} currentRange={range} />
         </section>
 
         {/* Data Sources & Footer */}

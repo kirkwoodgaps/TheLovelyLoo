@@ -34,12 +34,13 @@ export async function fetchSearchConsoleData(
   startDate: string,
   endDate: string
 ): Promise<SearchConsoleData | null> {
-  const connected = await isConnected("search_console")
+  // Use google_analytics service since we share the same OAuth token
+  const connected = await isConnected("google_analytics")
   if (!connected) {
     return null
   }
 
-  const accessToken = await getValidAccessToken("search_console")
+  const accessToken = await getValidAccessToken("google_analytics")
   if (!accessToken) {
     return null
   }
@@ -100,7 +101,9 @@ export async function fetchSearchConsoleData(
     )
 
     if (!dateResponse.ok || !queryResponse.ok || !pageResponse.ok) {
-      console.error("Search Console API error")
+      const errorBody = await dateResponse.text()
+      console.error("[v0] Search Console API error - Status:", dateResponse.status, "Body:", errorBody)
+      console.error("[v0] Site URL used:", siteUrl)
       return null
     }
 
@@ -154,7 +157,7 @@ export async function fetchSearchConsoleData(
 }
 
 export async function getSearchConsoleSites(): Promise<string[]> {
-  const accessToken = await getValidAccessToken("search_console")
+  const accessToken = await getValidAccessToken("google_analytics")
   if (!accessToken) {
     return []
   }
