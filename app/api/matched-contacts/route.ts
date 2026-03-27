@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { getRecentEntries } from "@/lib/gravity-forms"
+import { getAllLeadsForMatching } from "@/lib/gravity-forms"
 import { NextResponse } from "next/server"
 
 // Normalize phone number for comparison (remove all non-digits)
@@ -20,10 +20,10 @@ export async function GET() {
     const supabase = await createClient()
     
     // Fetch all data sources in parallel
-    const [contactsResult, callsResult, recentLeads] = await Promise.all([
+    const [contactsResult, callsResult, allLeads] = await Promise.all([
       supabase.from("contacts_17hats").select("id, first_name, last_name, email, phone, company, lead_source, status"),
       supabase.from("google_ads_calls").select("id, start_time, caller_phone_number, caller_name, campaign, status"),
-      getRecentEntries(100), // Get more leads for better matching
+      getAllLeadsForMatching(), // Get ALL leads for complete matching
     ])
 
     if (contactsResult.error) {
@@ -46,8 +46,8 @@ export async function GET() {
       }
     }
 
-    const leadPhoneMap = new Map<string, typeof recentLeads[0][]>()
-    for (const lead of recentLeads) {
+    const leadPhoneMap = new Map<string, typeof allLeads[0][]>()
+    for (const lead of allLeads) {
       const key = getPhoneKey(lead.phone)
       if (key) {
         if (!leadPhoneMap.has(key)) leadPhoneMap.set(key, [])
@@ -59,7 +59,7 @@ export async function GET() {
     const matchedContacts: {
       contact: typeof contacts[0]
       matchedCalls: typeof calls
-      matchedLeads: typeof recentLeads
+      matchedLeads: typeof allLeads
       matchSources: string[]
     }[] = []
 
@@ -94,7 +94,7 @@ export async function GET() {
       totalContacts: contacts.length,
       totalMatched: matchedContacts.length,
       totalCalls: calls.length,
-      totalLeads: recentLeads.length,
+      totalLeads: allLeads.length,
     })
   } catch (error) {
     console.error("Matched contacts error:", error)

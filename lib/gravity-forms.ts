@@ -202,6 +202,26 @@ export async function getRecentEntries(count = 25): Promise<NormalizedEntry[]> {
     .map(normalizeEntry)
 }
 
+// Fetch ALL entries across all pages (for matching purposes)
+export async function getAllLeadsForMatching(): Promise<NormalizedEntry[]> {
+  const pageSize = 200
+  let page = 1
+  let allEntries: NormalizedEntry[] = []
+  let totalCount = 0
+
+  do {
+    const res = await getAllEntries(pageSize, page)
+    totalCount = parseInt(res.total_count, 10)
+    const normalized = (res.entries || [])
+      .filter((e) => e.status === "active")
+      .map(normalizeEntry)
+    allEntries = allEntries.concat(normalized)
+    page++
+  } while (allEntries.length < totalCount && page <= 100) // Safety cap at 100 pages (20,000 entries max)
+
+  return allEntries
+}
+
 // ── Dashboard aggregation ──────────────────────────────
 
 export interface DashboardData {
