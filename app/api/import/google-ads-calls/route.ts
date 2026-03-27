@@ -28,12 +28,7 @@ function parseCSV(csv: string): Record<string, string>[] {
     }
   }
   
-  console.log("[v0] Header line index:", headerLineIndex)
-  console.log("[v0] Header line:", lines[headerLineIndex])
-  
   const headers = parseCSVLine(lines[headerLineIndex]).map((h) => h.trim().replace(/^"|"$/g, ""))
-  
-  console.log("[v0] Parsed headers:", headers)
   
   const rows: Record<string, string>[] = []
 
@@ -119,12 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     const csvText = await file.text()
-    console.log("[v0] CSV first 500 chars:", csvText.substring(0, 500))
-    
     const rows = parseCSV(csvText)
-    console.log("[v0] Parsed rows count:", rows.length)
-    console.log("[v0] First row keys:", rows[0] ? Object.keys(rows[0]) : "no rows")
-    console.log("[v0] First row values:", rows[0] ? JSON.stringify(rows[0]) : "no rows")
 
     if (rows.length === 0) {
       return NextResponse.json({ error: "No data found in CSV" }, { status: 400 })
@@ -156,8 +146,6 @@ export async function POST(request: NextRequest) {
       }
       return record
     })
-    
-    console.log("[v0] First mapped record:", JSON.stringify(records[0]))
 
     const supabase = await createClient()
 
@@ -186,7 +174,6 @@ export async function POST(request: NextRequest) {
           if (errors.length < 5) {
             errors.push(`${error.code}: ${error.message}`)
           }
-          console.error("[v0] Insert error for record:", error, "Record:", record)
         }
       } else {
         imported++
