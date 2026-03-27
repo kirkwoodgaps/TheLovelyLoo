@@ -12,6 +12,7 @@ import { ImportedContactsTable } from "@/components/dashboard/imported-contacts-
 import { MatchedContactsTable } from "@/components/dashboard/matched-contacts-table"
 import { getDashboardData } from "@/lib/gravity-forms"
 import { fetchGoogleAdsSummary } from "@/lib/google-ads"
+import { fetchGoogleAdsData } from "@/lib/google-ads-api"
 
 const RANGE_CONFIG: Record<string, { days: number; label: string }> = {
   "7days": { days: 7, label: "Last 7 days" },
@@ -33,13 +34,49 @@ export default async function DashboardPage({
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - cutoffDays)
 
-  const [gfResult, googleAdsResult] = await Promise.allSettled([
+  const [gfResult, googleAdsSheetResult, googleAdsApiResult] = await Promise.allSettled([
     getDashboardData(),
     fetchGoogleAdsSummary(),
+    fetchGoogleAdsData(), // Direct API (preferred if credentials configured)
   ])
 
   const data = gfResult.status === "fulfilled" ? gfResult.value : null
-  const googleAds = googleAdsResult.status === "fulfilled" ? googleAdsResult.value : null
+  const googleAdsFromSheet = googleAdsSheetResult.status === "fulfilled" ? googleAdsSheetResult.value : null
+  const googleAdsFromApi = googleAdsApiResult.status === "fulfilled" ? googleAdsApiResult.value : null
+  
+  // Prefer direct API data if available, fallback to spreadsheet
+  const useDirectApi = googleAdsFromApi?.hasData
+  const googleAds = useDirectApi ? {
+    hasData: true,
+    totalSpend: googleAdsFromApi.summary.totalSpend,
+    totalConversions: googleAdsFromApi.summary.totalConversions,
+    totalClicks: googleAdsFromApi.summary.totalClicks,
+    totalImpressions: googleAdsFromApi.summary.totalImpressions,
+    avgCtr: googleAdsFromApi.summary.totalImpressions > 0 
+      ? (googleAdsFromApi.summary.totalClicks / googleAdsFromApi.summary.totalImpressions) * 100 
+      : 0,
+    costPerConversion: googleAdsFromApi.summary.totalConversions > 0
+      ? googleAdsFromApi.summary.totalSpend / googleAdsFromApi.summary.totalConversions
+      : 0,
+    daily: googleAdsFromApi.daily.map(d => ({
+      date: d.date,
+      spend: d.cost,
+      clicks: d.clicks,
+      impressions: d.impressions,
+      conversions: d.conversions,
+    })),
+    monthly: aggregateToMonthly(googleAdsFromApi.daily),
+    campaigns: googleAdsFromApi.campaigns.map(c => ({
+      name: c.campaign,
+      spend: c.cost,
+      impressions: c.impressions,
+      clicks: c.clicks,
+      conversions: c.conversions,
+      ctr: c.impressions > 0 ? (c.clicks / c.impressions) * 100 : 0,
+      phoneCalls: 0,
+    })),
+    callRecords: [],
+  } : googleAdsFromSheet
 
   // If both sources failed, show error
   if (!data && !googleAds) {
@@ -227,4 +264,21 @@ function formatMonthLabel(yyyyMm: string): string {
   const [year, month] = yyyyMm.split("-")
   const date = new Date(parseInt(year), parseInt(month) - 1)
   return date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+}
+
+// Helper to aggregate daily data to monthly for API data
+function aggregateToMonthly(daily: { date: string; cost: number; clicks: number; impressions: number; conversions: number }[]) {
+  const monthlyMap = new Map<string, { month: string; spend: number; clicks: number; impressions: number; conversions: number }>()
+  
+  for (const d of daily) {
+    const month = d.date.substring(0, 7) // YYYY-MM
+    const existing = monthlyMap.get(month) || { month, spend: 0, clicks: 0, impressions: 0, conversions: 0 }
+    existing.spend += d.cost
+    existing.clicks += d.clicks
+    existing.impressions += d.impressions
+    existing.conversions += d.conversions
+    monthlyMap.set(month, existing)
+  }
+  
+  return Array.from(monthlyMap.values()).sort((a, b) => a.month.localeCompare(b.month))
 }
