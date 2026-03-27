@@ -150,7 +150,6 @@ export default async function DashboardPage({
     ? filteredMonthly.map((m) => ({
         month: formatMonthLabel(m.month),
         google: m.spend,
-        facebook: 0,
       }))
     : []
 
