@@ -1,5 +1,6 @@
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { SectionNav } from "@/components/dashboard/section-nav"
+import { DataSourcesFooter } from "@/components/dashboard/data-sources-footer"
 import { KpiCards } from "@/components/dashboard/kpi-cards"
 import { LeadsOverTimeChart } from "@/components/dashboard/leads-over-time-chart"
 import { LeadSourcesChart } from "@/components/dashboard/lead-sources-chart"
@@ -221,7 +222,7 @@ export default async function DashboardPage({
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-        <DashboardHeader sources={sources} />
+        <DashboardHeader />
         
         <SectionNav />
 
@@ -278,9 +279,10 @@ export default async function DashboardPage({
           <GA4Card data={ga4Data} isConnected={googleConnected} currentRange={range} />
         </section>
 
-        {/* Footer */}
-        <footer className="mt-8 border-t border-border/40 pt-4 pb-6">
-          <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
+        {/* Data Sources & Footer */}
+        <footer className="mt-8 border-t border-border/40 pt-4 pb-6 space-y-4">
+          <DataSourcesFooter sources={sources} />
+          <div className="flex flex-col items-center justify-between gap-2 sm:flex-row pt-2 border-t border-border/20">
             <p className="text-xs text-muted-foreground">
               Data refreshes every 5 minutes
             </p>

@@ -223,43 +223,42 @@ export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* KPI Cards */}
-          <div className="flex flex-col gap-4">
-            {dynamicCards.map((card) => (
-              <Card key={card.label} className="border-border/60 shadow-sm bg-muted/30">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                      {card.label}
-                    </span>
-                    <card.icon className="h-4 w-4 text-muted-foreground/60" />
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-2xl font-bold tracking-tight text-foreground">
-                      {card.value}
-                    </span>
-                  </div>
-                  {card.showTrend && card.change !== undefined ? (
-                    <div className="mt-1">
-                      <TrendBadge value={card.change} />
-                      <span className="ml-1.5 text-xs text-muted-foreground">
-                        {card.sublabel}
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-xs text-muted-foreground/70">
+        {/* KPI Cards - Horizontal Row */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
+          {dynamicCards.map((card) => (
+            <Card key={card.label} className="border-border/60 shadow-sm bg-muted/30">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    {card.label}
+                  </span>
+                  <card.icon className="h-4 w-4 text-muted-foreground/60" />
+                </div>
+                <div className="mt-2">
+                  <span className="text-2xl font-bold tracking-tight text-foreground">
+                    {card.value}
+                  </span>
+                </div>
+                {card.showTrend && card.change !== undefined ? (
+                  <div className="mt-1">
+                    <TrendBadge value={card.change} />
+                    <span className="ml-1.5 text-xs text-muted-foreground">
                       {card.sublabel}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </span>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground/70">
+                    {card.sublabel}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-          {/* Google Ads Campaign Performance */}
-          <div className="lg:col-span-2">
-            {googleMetrics ? (
+        {/* Google Ads Campaign Performance */}
+        <div>
+          {googleMetrics ? (
               <Card className="border-border/60 shadow-sm h-full">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base font-semibold">
@@ -323,8 +322,7 @@ export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics
                   </p>
                 </CardContent>
               </Card>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
