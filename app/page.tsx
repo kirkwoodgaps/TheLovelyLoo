@@ -12,7 +12,6 @@ import { ImportedContactsTable } from "@/components/dashboard/imported-contacts-
 import { MatchedContactsTable } from "@/components/dashboard/matched-contacts-table"
 import { getDashboardData } from "@/lib/gravity-forms"
 import { fetchGoogleAdsSummary } from "@/lib/google-ads"
-import { facebookAdsMetrics } from "@/lib/dashboard-data"
 
 const RANGE_CONFIG: Record<string, { days: number; label: string }> = {
   "7days": { days: 7, label: "Last 7 days" },
@@ -138,7 +137,6 @@ export default async function DashboardPage({
   const sources = [
     { name: "Gravity Forms", status: data ? "live" as const : "error" as const },
     { name: "Google Ads", status: googleAds?.hasData ? "live" as const : "pending" as const },
-    { name: "Facebook Ads", status: "sample" as const },
   ]
 
   return (
@@ -182,10 +180,7 @@ export default async function DashboardPage({
 
         {/* Campaign Performance */}
         <section className="mt-4" aria-label="Campaign performance">
-          <CampaignTables
-            googleMetrics={googleMetrics}
-            facebookMetrics={facebookAdsMetrics}
-          />
+          <CampaignTables googleMetrics={googleMetrics} />
         </section>
 
         {/* Recent Leads */}
