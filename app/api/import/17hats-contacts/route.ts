@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 
+// Allow larger file uploads (up to 10MB) - App Router uses route segment config
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
+
 interface ContactRecord {
   first_name: string
   last_name: string
@@ -87,11 +91,28 @@ function parseDate(dateStr: string): string | null {
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
+    let formData: FormData
+    try {
+      formData = await request.formData()
+    } catch (formError) {
+      return NextResponse.json(
+        { error: "Failed to read form data. File may be too large (max 4MB).", details: String(formError) },
+        { status: 413 }
+      )
+    }
+    
     const file = formData.get("file") as File
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
+    
+    // Check file size (4MB limit for Vercel)
+    if (file.size > 4 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 4MB.` },
+        { status: 413 }
+      )
     }
 
     const csvText = await file.text()
