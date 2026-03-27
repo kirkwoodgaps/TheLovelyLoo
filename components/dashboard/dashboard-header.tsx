@@ -6,6 +6,12 @@ type SourceStatus = {
   status: "live" | "pending" | "sample" | "error"
 }
 
+const manualImportSources = [
+  { name: "Google Ads CSV", status: "sample" as const },
+  { name: "17hats Contacts", status: "sample" as const },
+  { name: "Call Records", status: "sample" as const },
+]
+
 export function DashboardHeader({
   sources,
 }: {
@@ -30,9 +36,11 @@ export function DashboardHeader({
           </p>
         </div>
       </div>
+      
+      {/* Live Data Sources */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium text-muted-foreground mr-1">
-          Data Sources:
+          Live Data Sources:
         </span>
         {sources.map((s) => (
           <Badge
@@ -63,6 +71,25 @@ export function DashboardHeader({
                         : "bg-muted-foreground/50"
                 }`}
               />
+            </span>
+            {s.name}
+          </Badge>
+        ))}
+      </div>
+
+      {/* Manual Import Sources */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground mr-1">
+          Manual Import Sources:
+        </span>
+        {manualImportSources.map((s) => (
+          <Badge
+            key={s.name}
+            variant="outline"
+            className="border-border bg-muted text-muted-foreground"
+          >
+            <span className="relative mr-1.5 flex h-1.5 w-1.5">
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
             </span>
             {s.name}
           </Badge>

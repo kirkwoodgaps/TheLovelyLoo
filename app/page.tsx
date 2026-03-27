@@ -1,4 +1,5 @@
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { SectionNav } from "@/components/dashboard/section-nav"
 import { KpiCards } from "@/components/dashboard/kpi-cards"
 import { LeadsOverTimeChart } from "@/components/dashboard/leads-over-time-chart"
 import { LeadSourcesChart } from "@/components/dashboard/lead-sources-chart"
@@ -210,24 +211,28 @@ export default async function DashboardPage({
       }
     : null
 
-  // ── Data source statuses ────────────────���────────────────
+  // ── Data source statuses ─────────────────────────────────
   const sources = [
     { name: "Gravity Forms", status: data ? "live" as const : "error" as const },
     { name: "Google Ads", status: googleAds?.hasData ? "live" as const : "pending" as const },
+    { name: "GA4", status: ga4Data?.hasData ? "live" as const : googleConnected ? "pending" as const : "error" as const },
   ]
 
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         <DashboardHeader sources={sources} />
+        
+        <SectionNav />
 
         {/* KPI Cards - Lifetime Totals, Selected Period, and Campaign Performance */}
-        <section className="mt-6" aria-label="Key performance indicators">
+        <section id="kpi" className="mt-2" aria-label="Key performance indicators">
           <KpiCards data={kpi} googleMetrics={googleMetrics} />
         </section>
 
         {/* Leads Charts Row */}
         <section
+          id="leads-charts"
           className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3"
           aria-label="Leads charts"
         >
@@ -240,17 +245,17 @@ export default async function DashboardPage({
         </section>
 
         {/* This Week */}
-        <section className="mt-4" aria-label="This week activity">
+        <section id="this-week" className="mt-4" aria-label="This week activity">
           <WeeklyActivity data={data?.weeklyData ?? []} />
         </section>
 
         {/* Matched Contacts Section */}
-        <section className="mt-8" aria-label="Matched contacts">
+        <section id="matched-contacts" className="mt-8" aria-label="Matched contacts">
           <MatchedContactsTable />
         </section>
 
         {/* Imported Data Section */}
-        <section className="mt-8 space-y-4" aria-label="Imported data">
+        <section id="imported-data" className="mt-8 space-y-4" aria-label="Imported data">
           <h2 className="text-lg font-semibold text-foreground">Imported Data</h2>
           
           {/* Import Tool */}
@@ -264,13 +269,13 @@ export default async function DashboardPage({
         </section>
 
         {/* Recent Leads */}
-        <section className="mt-8" aria-label="Recent leads">
+        <section id="recent-leads" className="mt-8" aria-label="Recent leads">
           <RecentLeadsTable leads={data?.recentLeads ?? []} />
         </section>
 
         {/* GA4 Analytics */}
-        <section className="mt-8" aria-label="Google Analytics">
-          <GA4Card data={ga4Data} isConnected={googleConnected} />
+        <section id="analytics" className="mt-8" aria-label="Google Analytics">
+          <GA4Card data={ga4Data} isConnected={googleConnected} currentRange={range} />
         </section>
 
         {/* Footer */}
