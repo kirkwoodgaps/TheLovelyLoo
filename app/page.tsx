@@ -114,11 +114,15 @@ export default async function DashboardPage({
   const rangeGoogleConversions = filteredDaily.reduce((s, d) => s + d.conversions, 0)
 
   // ── Filter Gravity Forms leads to range ──────────────────
-  // monthlyData uses short month names but has a year field
+  // monthlyData uses YYYY-MM format
   const filteredMonthlyLeads = (data?.monthlyData ?? []).filter((m) => {
     const d = new Date(m.month + "-01")
     return d >= cutoffDate
   })
+  
+  console.log("[v0] monthlyData:", data?.monthlyData)
+  console.log("[v0] filteredMonthlyLeads:", filteredMonthlyLeads)
+  console.log("[v0] cutoffDate for leads:", cutoffDate)
   const rangeLeadTotal = filteredMonthlyLeads.reduce((s, m) => s + m.total, 0)
 
   // current month vs previous month (always uses current/prev regardless of range)
@@ -191,7 +195,7 @@ export default async function DashboardPage({
             <LeadsOverTimeChart data={filteredMonthlyLeads} />
           </div>
           <div>
-            <LeadSourcesChart data={data?.formBreakdown ?? []} />
+            <LeadSourcesChart data={[...(data?.formBreakdown ?? [])].sort((a, b) => b.value - a.value)} />
           </div>
         </section>
 
