@@ -59,6 +59,7 @@ export async function fetchImportedGoogleAdsMetrics(): Promise<ImportedGoogleAds
       .from("google_ads_metrics")
       .select("*")
       .order("date", { ascending: true })
+      .limit(10000) // Ensure we get all rows
 
     if (error) {
       console.error("Error fetching imported Google Ads metrics:", error)
@@ -68,6 +69,9 @@ export async function fetchImportedGoogleAdsMetrics(): Promise<ImportedGoogleAds
     if (!metrics || metrics.length === 0) {
       return null
     }
+    
+    console.log("[v0] Imported metrics count:", metrics.length)
+    console.log("[v0] Imported metrics date range:", metrics[0]?.date, "to", metrics[metrics.length - 1]?.date)
 
     // Aggregate daily data (combine all campaigns per day)
     const dailyMap = new Map<string, DailyData>()
