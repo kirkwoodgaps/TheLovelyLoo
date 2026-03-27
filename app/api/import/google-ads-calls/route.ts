@@ -18,11 +18,36 @@ function parseCSV(csv: string): Record<string, string>[] {
   const lines = csv.trim().split("\n")
   if (lines.length < 2) return []
 
-  const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""))
+  // Google Ads exports use tabs, not commas
+  // Also may have "Call details" and "All time" as prefix columns to skip
+  const delimiter = lines[0].includes("\t") ? "\t" : ","
+  
+  let headers = lines[0].split(delimiter).map((h) => h.trim().replace(/^"|"$/g, ""))
+  
+  // Skip Google Ads report prefix columns ("Call details", "All time")
+  const startTimeIdx = headers.findIndex(h => h.toLowerCase().includes("start time"))
+  if (startTimeIdx > 0) {
+    headers = headers.slice(startTimeIdx)
+  }
+  
+  console.log("[v0] Delimiter:", delimiter === "\t" ? "TAB" : "COMMA")
+  console.log("[v0] Headers after cleanup:", headers)
+  
   const rows: Record<string, string>[] = []
 
   for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i])
+    const line = lines[i].trim()
+    if (!line) continue
+    
+    let values = delimiter === "\t" 
+      ? line.split("\t").map(v => v.trim())
+      : parseCSVLine(line)
+    
+    // Skip the same number of prefix columns in data rows
+    if (startTimeIdx > 0) {
+      values = values.slice(startTimeIdx)
+    }
+    
     const row: Record<string, string> = {}
     headers.forEach((header, idx) => {
       row[header] = values[idx]?.trim().replace(/^"|"$/g, "") || ""
