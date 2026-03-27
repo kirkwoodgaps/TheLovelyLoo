@@ -6,6 +6,7 @@ export interface GA4Data {
   hasData: boolean
   totalSessions: number
   totalUsers: number
+  newUsers: number
   totalPageViews: number
   avgSessionDuration: number
   bounceRate: number
@@ -127,6 +128,7 @@ export async function fetchGA4Data(
           metrics: [
             { name: "sessions" },
             { name: "totalUsers" },
+            { name: "newUsers" },
             { name: "screenPageViews" },
             { name: "averageSessionDuration" },
             { name: "bounceRate" },
@@ -175,14 +177,16 @@ export async function fetchGA4Data(
     const overallRow = overallData.rows?.[0]
     const totalSessions = overallRow ? parseInt(overallRow.metricValues[0].value) || 0 : 0
     const totalUsers = overallRow ? parseInt(overallRow.metricValues[1].value) || 0 : 0
-    const totalPageViews = overallRow ? parseInt(overallRow.metricValues[2].value) || 0 : 0
-    const avgSessionDuration = overallRow ? parseFloat(overallRow.metricValues[3].value) || 0 : 0
-    const bounceRate = overallRow ? parseFloat(overallRow.metricValues[4].value) * 100 || 0 : 0
+    const newUsers = overallRow ? parseInt(overallRow.metricValues[2].value) || 0 : 0
+    const totalPageViews = overallRow ? parseInt(overallRow.metricValues[3].value) || 0 : 0
+    const avgSessionDuration = overallRow ? parseFloat(overallRow.metricValues[4].value) || 0 : 0
+    const bounceRate = overallRow ? parseFloat(overallRow.metricValues[5].value) * 100 || 0 : 0
 
     return {
       hasData: daily.length > 0,
       totalSessions,
       totalUsers,
+      newUsers,
       totalPageViews,
       avgSessionDuration: Math.round(avgSessionDuration),
       bounceRate: Math.round(bounceRate * 100) / 100,

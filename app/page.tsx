@@ -211,10 +211,11 @@ export default async function DashboardPage({
       }
     : null
 
-  // ── Data source statuses ────────────────���────────────────
+  // ── Data source statuses ─────────────────────────────────
   const sources = [
     { name: "Gravity Forms", status: data ? "live" as const : "error" as const },
     { name: "Google Ads", status: googleAds?.hasData ? "live" as const : "pending" as const },
+    { name: "GA4", status: ga4Data?.hasData ? "live" as const : googleConnected ? "pending" as const : "error" as const },
   ]
 
   return (
@@ -274,7 +275,7 @@ export default async function DashboardPage({
 
         {/* GA4 Analytics */}
         <section id="analytics" className="mt-8" aria-label="Google Analytics">
-          <GA4Card data={ga4Data} isConnected={googleConnected} />
+          <GA4Card data={ga4Data} isConnected={googleConnected} currentRange={range} />
         </section>
 
         {/* Footer */}
