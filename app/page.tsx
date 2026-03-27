@@ -47,18 +47,9 @@ export default async function DashboardPage({
   const googleAdsFromApi = googleAdsApiResult.status === "fulfilled" ? googleAdsApiResult.value : null
   const googleAdsFromImport = googleAdsImportedResult.status === "fulfilled" ? googleAdsImportedResult.value : null
   
-  console.log("[v0] Google Ads data sources:")
-  console.log("[v0] - API hasData:", googleAdsFromApi?.hasData)
-  console.log("[v0] - Import hasData:", googleAdsFromImport?.hasData)
-  console.log("[v0] - Import daily count:", googleAdsFromImport?.daily?.length)
-  console.log("[v0] - Import totalSpend:", googleAdsFromImport?.totalSpend)
-  console.log("[v0] - Sheet hasData:", googleAdsFromSheet?.hasData)
-  
   // Priority: Direct API > Imported CSV > Spreadsheet
   const useDirectApi = googleAdsFromApi?.hasData
   const useImported = !useDirectApi && googleAdsFromImport?.hasData
-  
-  console.log("[v0] Using source:", useDirectApi ? "API" : useImported ? "Imported" : "Sheet")
   
   const googleAds = useDirectApi ? {
     hasData: true,
@@ -105,16 +96,9 @@ export default async function DashboardPage({
   }
 
   // ── Filter Google Ads to range ───────────────────────────
-  console.log("[v0] Cutoff date:", cutoffDate.toISOString())
-  console.log("[v0] Google Ads daily sample (first 3):", googleAds?.daily?.slice(0, 3))
-  console.log("[v0] Google Ads daily sample (last 3):", googleAds?.daily?.slice(-3))
-  
   const filteredDaily = googleAds?.daily.filter(
     (d) => new Date(d.date) >= cutoffDate
   ) ?? []
-  
-  console.log("[v0] Filtered daily count:", filteredDaily.length)
-  console.log("[v0] Filtered daily sample:", filteredDaily.slice(-3))
   const filteredMonthly = googleAds?.monthly.filter((m) => {
     const d = new Date(m.month + "-01")
     return d >= cutoffDate
