@@ -10,6 +10,7 @@ import { RecentLeadsTable } from "@/components/dashboard/recent-leads-table"
 import { DataImport } from "@/components/dashboard/data-import"
 import { ImportedCallsTable } from "@/components/dashboard/imported-calls-table"
 import { ImportedContactsTable } from "@/components/dashboard/imported-contacts-table"
+import { MatchedContactsTable } from "@/components/dashboard/matched-contacts-table"
 import { getDashboardData } from "@/lib/gravity-forms"
 import { fetchGoogleAdsSummary } from "@/lib/google-ads"
 import { facebookAdsMetrics } from "@/lib/dashboard-data"
@@ -197,6 +198,11 @@ export default async function DashboardPage({
         {/* Recent Leads */}
         <section className="mt-4" aria-label="Recent leads">
           <RecentLeadsTable leads={data?.recentLeads ?? []} />
+        </section>
+
+        {/* Matched Contacts Section */}
+        <section className="mt-8" aria-label="Matched contacts">
+          <MatchedContactsTable />
         </section>
 
         {/* Imported Data Section */}
