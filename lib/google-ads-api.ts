@@ -6,6 +6,7 @@ interface GoogleAdsCredentials {
   clientSecret: string
   developerToken: string
   customerId: string
+  managerCustomerId: string
   refreshToken: string
 }
 
@@ -66,19 +67,28 @@ async function queryGoogleAds(
   query: string
 ): Promise<any[]> {
   const customerId = credentials.customerId.replace(/-/g, "")
+  const managerCustomerId = credentials.managerCustomerId.replace(/-/g, "")
+  
   // Use v17 API with search endpoint (not searchStream)
   const url = `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:search`
 
   console.log("[v0] Google Ads API: Querying URL:", url)
+  console.log("[v0] Google Ads API: Using manager ID:", managerCustomerId || "(none)")
+  
+  const headers: Record<string, string> = {
+    "Authorization": `Bearer ${accessToken}`,
+    "developer-token": credentials.developerToken,
+    "Content-Type": "application/json",
+  }
+  
+  // Add manager customer ID header if provided (required for MCC accounts)
+  if (managerCustomerId) {
+    headers["login-customer-id"] = managerCustomerId
+  }
   
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${accessToken}`,
-      "developer-token": credentials.developerToken,
-      "Content-Type": "application/json",
-      "login-customer-id": customerId, // Required for some accounts
-    },
+    headers,
     body: JSON.stringify({ query }),
   })
 
@@ -105,6 +115,7 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
     clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET || "",
     developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN || "",
     customerId: process.env.GOOGLE_ADS_CUSTOMER_ID || "",
+    managerCustomerId: process.env.GOOGLE_ADS_MANAGER_CUSTOMER_ID || "",
     refreshToken: process.env.GOOGLE_ADS_REFRESH_TOKEN || "",
   }
 
@@ -113,6 +124,7 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
     clientSecret: !!credentials.clientSecret,
     developerToken: !!credentials.developerToken,
     customerId: !!credentials.customerId,
+    managerCustomerId: !!credentials.managerCustomerId,
     refreshToken: !!credentials.refreshToken,
   })
 
