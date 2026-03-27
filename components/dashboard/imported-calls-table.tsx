@@ -171,7 +171,7 @@ export function ImportedCallsTable() {
             Loading calls...
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6">
+          <div className="overflow-x-auto -mx-6 max-h-[400px] overflow-y-auto">
             <div className="inline-block min-w-full align-middle px-6">
               <Table>
                 <TableHeader>

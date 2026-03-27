@@ -1,7 +1,7 @@
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { KpiCards } from "@/components/dashboard/kpi-cards"
 import { LeadsOverTimeChart } from "@/components/dashboard/leads-over-time-chart"
-import { AdSpendChart } from "@/components/dashboard/ad-spend-chart"
+
 import { LeadSourcesChart } from "@/components/dashboard/lead-sources-chart"
 import { WeeklyActivity } from "@/components/dashboard/weekly-activity"
 import { CampaignTables } from "@/components/dashboard/campaign-tables"
@@ -145,14 +145,6 @@ export default async function DashboardPage({
     rangeLabel,
   }
 
-  // ── Ad Spend chart from filtered monthly ─────────────────
-  const adSpendData = googleAds?.hasData
-    ? filteredMonthly.map((m) => ({
-        month: formatMonthLabel(m.month),
-        google: m.spend,
-      }))
-    : []
-
   // ── Google Ads campaign metrics (always 90-day from sheet) ──
   const googleMetrics = googleAds?.hasData
     ? {
@@ -203,20 +195,9 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        {/* Ad Spend + Weekly Activity */}
-        <section
-          className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3"
-          aria-label="Ad spend and weekly activity"
-        >
-          <div className="lg:col-span-2">
-            <AdSpendChart
-              data={adSpendData}
-              hasGoogleData={googleAds?.hasData ?? false}
-            />
-          </div>
-          <div>
-            <WeeklyActivity data={data?.weeklyData ?? []} />
-          </div>
+        {/* Weekly Activity */}
+        <section className="mt-4" aria-label="Weekly activity">
+          <WeeklyActivity data={data?.weeklyData ?? []} />
         </section>
 
         {/* Campaign Performance */}

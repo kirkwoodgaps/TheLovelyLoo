@@ -213,7 +213,7 @@ export function MatchedContactsTable() {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="overflow-x-auto -mx-6 px-6">
+        <div className="overflow-x-auto -mx-6 px-6 max-h-[400px] overflow-y-auto">
           <Table className="min-w-[900px]">
             <TableHeader>
               <TableRow className="hover:bg-transparent">

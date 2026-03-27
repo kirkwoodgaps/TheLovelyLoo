@@ -42,7 +42,7 @@ function PlatformSummary({ metrics, showPhoneCalls }: { metrics: PlatformMetrics
     { label: "Impressions", value: metrics.impressions.toLocaleString() },
     { label: "Clicks", value: metrics.clicks.toLocaleString() },
     { label: "CTR", value: `${metrics.ctr}%` },
-    { label: "Conversions", value: metrics.conversions.toString() },
+    { label: "Conversions", value: Math.round(metrics.conversions).toString() },
     { label: "Cost/Conv.", value: `$${metrics.costPerConversion.toFixed(2)}` },
   ]
   if (showPhoneCalls && totalPhoneCalls > 0) {
@@ -120,7 +120,7 @@ function CampaignTable({
                 {campaign.ctr}%
               </TableCell>
               <TableCell className="text-right font-mono text-sm font-semibold">
-                {campaign.conversions}
+                {Math.round(campaign.conversions)}
               </TableCell>
               {showPhoneCalls && (
                 <TableCell className="text-right font-mono text-sm">
