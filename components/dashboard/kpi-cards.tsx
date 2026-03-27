@@ -62,47 +62,56 @@ const formIcons: Record<string, typeof Users> = {
 export function KpiCards({ data }: { data: KpiData }) {
   const rl = data.rangeLabel || "Last 6 months"
 
-  const cards: {
+  // Lifetime/All-Time metrics (never change with date range)
+  const lifetimeCards: {
     label: string
     value: string
     icon: typeof Users
-    showTrend: boolean
-    change?: number
-    sublabel?: string
+    sublabel: string
   }[] = [
     {
       label: "All-Time Leads",
       value: formatNumber(data.totalLeads),
       icon: Users,
-      showTrend: false,
       sublabel: "Lifetime total",
     },
+    ...data.formCounts.map((form) => ({
+      label: form.title,
+      value: formatNumber(form.totalEntries),
+      icon: formIcons[form.id] || FileText,
+      sublabel: "All time",
+    })),
+  ]
+
+  // Dynamic metrics (change based on selected date range)
+  const dynamicCards: {
+    label: string
+    value: string
+    icon: typeof Users
+    showTrend: boolean
+    change?: number
+    sublabel: string
+  }[] = [
     {
       label: "This Month",
       value: formatNumber(data.currentMonthLeads),
       icon: TrendingUp,
       showTrend: true,
       change: data.totalLeadsChange,
+      sublabel: "vs last month",
     },
-    ...data.formCounts.map((form) => ({
-      label: form.title,
-      value: formatNumber(form.totalEntries),
-      icon: formIcons[form.id] || FileText,
-      showTrend: false,
-      sublabel: "All time",
-    })),
   ]
 
   // Add Google Ads KPIs if data exists
   if (data.hasGoogleAds && data.googleAdsSpend !== undefined) {
-    cards.push({
+    dynamicCards.push({
       label: "Google Ad Spend",
       value: formatCurrency(data.googleAdsSpend),
       icon: DollarSign,
       showTrend: false,
       sublabel: rl,
     })
-    cards.push({
+    dynamicCards.push({
       label: "Google Conversions",
       value: formatNumber(data.googleAdsConversions || 0),
       icon: Target,
@@ -111,44 +120,70 @@ export function KpiCards({ data }: { data: KpiData }) {
     })
   }
 
-  // Determine grid cols based on card count
-  const gridClass =
-    cards.length <= 6
-      ? "grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6"
-      : "grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-8"
-
   return (
-    <div className={gridClass}>
-      {cards.map((card) => (
-        <Card key={card.label} className="border-border/60 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                {card.label}
-              </span>
-              <card.icon className="h-4 w-4 text-muted-foreground/60" />
-            </div>
-            <div className="mt-2 flex items-end gap-2">
-              <span className="text-2xl font-bold tracking-tight text-foreground">
-                {card.value}
-              </span>
-            </div>
-            {card.showTrend && card.change !== undefined && (
-              <div className="mt-1">
-                <TrendBadge value={card.change} />
-                <span className="ml-1.5 text-xs text-muted-foreground">
-                  vs last month
-                </span>
-              </div>
-            )}
-            {card.sublabel && !card.showTrend && (
-              <p className="mt-1 text-xs text-muted-foreground/70">
-                {card.sublabel}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+    <div className="space-y-6">
+      {/* Lifetime Totals Section */}
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Lifetime Totals</h3>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          {lifetimeCards.map((card) => (
+            <Card key={card.label} className="border-border/60 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    {card.label}
+                  </span>
+                  <card.icon className="h-4 w-4 text-muted-foreground/60" />
+                </div>
+                <div className="mt-2">
+                  <span className="text-2xl font-bold tracking-tight text-foreground">
+                    {card.value}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground/70">
+                  {card.sublabel}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Dynamic Timeframe Section */}
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Selected Period</h3>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          {dynamicCards.map((card) => (
+            <Card key={card.label} className="border-border/60 shadow-sm bg-muted/30">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    {card.label}
+                  </span>
+                  <card.icon className="h-4 w-4 text-muted-foreground/60" />
+                </div>
+                <div className="mt-2">
+                  <span className="text-2xl font-bold tracking-tight text-foreground">
+                    {card.value}
+                  </span>
+                </div>
+                {card.showTrend && card.change !== undefined ? (
+                  <div className="mt-1">
+                    <TrendBadge value={card.change} />
+                    <span className="ml-1.5 text-xs text-muted-foreground">
+                      {card.sublabel}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground/70">
+                    {card.sublabel}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
