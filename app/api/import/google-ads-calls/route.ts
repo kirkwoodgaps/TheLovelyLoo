@@ -12,17 +12,36 @@ interface CallRecord {
   call_source: string
   call_type: string
   campaign: string
+  caller_name: string | null
+  inquiry_topic: string | null
+  inquiry_notes: string | null
 }
 
 function parseCSV(csv: string): Record<string, string>[] {
   const lines = csv.trim().split("\n")
   if (lines.length < 2) return []
 
-  const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""))
+  // Google Ads CSV format has metadata rows before the actual headers
+  // Find the header row by looking for "Start time" column
+  let headerLineIndex = 0
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
+    if (lines[i].toLowerCase().includes("start time")) {
+      headerLineIndex = i
+      break
+    }
+  }
+  
+  const headers = parseCSVLine(lines[headerLineIndex]).map((h) => h.trim().replace(/^"|"$/g, ""))
+  
   const rows: Record<string, string>[] = []
 
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i])
+  // Start from the line after headers
+  for (let i = headerLineIndex + 1; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (!line) continue
+    
+    const values = parseCSVLine(line)
+    
     const row: Record<string, string> = {}
     headers.forEach((header, idx) => {
       row[header] = values[idx]?.trim().replace(/^"|"$/g, "") || ""
@@ -108,25 +127,31 @@ export async function POST(request: NextRequest) {
     // Expected columns from Google Ads export:
     // Start time, Duration (seconds), Caller country code, Caller area code, 
     // Caller phone number, Recording, Status, Call source, Call type, Campaign
-    const records: CallRecord[] = rows.map((row) => ({
-      start_time: parseDateTime(
-        row["Start time"] || row["Start Time"] || row["start_time"] || ""
-      ),
-      duration_seconds: parseDuration(
-        row["Duration (seconds)"] || row["Duration"] || row["duration_seconds"] || row["duration"] || "0"
-      ),
-      caller_country_code:
-        row["Caller country code"] || row["Country code"] || row["caller_country_code"] || "",
-      caller_area_code:
-        row["Caller area code"] || row["Area code"] || row["caller_area_code"] || "",
-      caller_phone_number:
-        row["Caller phone number"] || row["Phone number"] || row["caller_phone_number"] || "",
-      recording_url: row["Recording"] || row["recording_url"] || null,
-      status: row["Status"] || row["status"] || "",
-      call_source: row["Call source"] || row["call_source"] || "",
-      call_type: row["Call type"] || row["call_type"] || "",
-      campaign: row["Campaign"] || row["campaign"] || "",
-    }))
+    const records: CallRecord[] = rows.map((row) => {
+      const record = {
+        start_time: parseDateTime(
+          row["Start time"] || row["Start Time"] || row["start_time"] || ""
+        ),
+        duration_seconds: parseDuration(
+          row["Duration (seconds)"] || row["Duration"] || row["duration_seconds"] || row["duration"] || "0"
+        ),
+        caller_country_code:
+          row["Caller country code"] || row["Country code"] || row["caller_country_code"] || "",
+        caller_area_code:
+          row["Caller area code"] || row["Area code"] || row["caller_area_code"] || "",
+        caller_phone_number:
+          row["Caller phone number"] || row["Phone number"] || row["caller_phone_number"] || "",
+        recording_url: row["Recording"] || row["recording_url"] || null,
+        status: row["Status"] || row["status"] || "",
+        call_source: row["Call source"] || row["call_source"] || "",
+        call_type: row["Call type"] || row["call_type"] || "",
+        campaign: row["Campaign"] || row["campaign"] || "",
+        caller_name: row["Name"] || row["Caller Name"] || row["name"] || null,
+        inquiry_topic: row["Inquiry Topic"] || row["Topic"] || row["inquiry_topic"] || null,
+        inquiry_notes: row["Inquiry Notes"] || row["Notes"] || row["inquiry_notes"] || null,
+      }
+      return record
+    })
 
     const supabase = await createClient()
 
@@ -138,6 +163,8 @@ export async function POST(request: NextRequest) {
     // Insert records one by one, skipping duplicates
     let imported = 0
     let skipped = 0
+    let failed = 0
+    const errors: string[] = []
 
     for (const record of records) {
       const { error } = await supabase
@@ -149,7 +176,10 @@ export async function POST(request: NextRequest) {
         if (error.code === "23505") {
           skipped++
         } else {
-          console.error("Insert error for record:", error)
+          failed++
+          if (errors.length < 5) {
+            errors.push(`${error.code}: ${error.message}`)
+          }
         }
       } else {
         imported++
@@ -160,8 +190,10 @@ export async function POST(request: NextRequest) {
       success: true,
       imported,
       skipped,
+      failed,
       total: records.length,
-      message: `Imported ${imported} new call records${skipped > 0 ? `, skipped ${skipped} duplicates` : ""}`,
+      errors: errors.length > 0 ? errors : undefined,
+      message: `Imported ${imported} new call records${skipped > 0 ? `, skipped ${skipped} duplicates` : ""}${failed > 0 ? `, ${failed} failed` : ""}`,
     })
   } catch (error) {
     console.error("Import error:", error)

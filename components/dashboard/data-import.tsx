@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Upload, FileSpreadsheet, Phone, Users, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Upload, FileSpreadsheet, Phone, Users, CheckCircle2, AlertCircle, Loader2, TrendingUp } from "lucide-react"
 
 interface ImportResult {
   success: boolean
@@ -143,8 +143,10 @@ function ImportDropzone({
 
 export function DataImport() {
   const [googleAdsLoading, setGoogleAdsLoading] = useState(false)
+  const [googleAdsMetricsLoading, setGoogleAdsMetricsLoading] = useState(false)
   const [hatsLoading, setHatsLoading] = useState(false)
   const [googleAdsResult, setGoogleAdsResult] = useState<ImportResult | null>(null)
+  const [googleAdsMetricsResult, setGoogleAdsMetricsResult] = useState<ImportResult | null>(null)
   const [hatsResult, setHatsResult] = useState<ImportResult | null>(null)
 
   const handleGoogleAdsImport = async (file: File) => {
@@ -167,21 +169,59 @@ export function DataImport() {
           success: true,
           imported: data.imported,
           skipped: data.skipped,
-          message: data.message,
+          message: data.message + (data.failed > 0 ? ` (${data.failed} failed - check format)` : ""),
         })
       } else {
         setGoogleAdsResult({
+          success: false,
+          error: data.details ? `${data.error}: ${data.details}` : (data.error || "Failed to import file"),
+        })
+      }
+    } catch (error) {
+      console.error("[v0] Google Ads upload error:", error)
+      setGoogleAdsResult({
+        success: false,
+        error: `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`,
+      })
+    } finally {
+      setGoogleAdsLoading(false)
+    }
+  }
+
+  const handleGoogleAdsMetricsImport = async (file: File) => {
+    setGoogleAdsMetricsLoading(true)
+    setGoogleAdsMetricsResult(null)
+
+    try {
+      const text = await file.text()
+
+      const response = await fetch("/api/import-google-ads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csvData: text }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setGoogleAdsMetricsResult({
+          success: true,
+          imported: data.imported,
+          message: `Imported ${data.imported} rows (${data.dateRange.from} to ${data.dateRange.to})`,
+        })
+      } else {
+        setGoogleAdsMetricsResult({
           success: false,
           error: data.error || "Failed to import file",
         })
       }
     } catch (error) {
-      setGoogleAdsResult({
+      setGoogleAdsMetricsResult({
         success: false,
-        error: "Failed to upload file. Please try again.",
+        error: `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`,
       })
     } finally {
-      setGoogleAdsLoading(false)
+      setGoogleAdsMetricsLoading(false)
     }
   }
 
@@ -210,13 +250,14 @@ export function DataImport() {
       } else {
         setHatsResult({
           success: false,
-          error: data.error || "Failed to import file",
+          error: data.details ? `${data.error}: ${data.details}` : (data.error || "Failed to import file"),
         })
       }
     } catch (error) {
+      console.error("[v0] 17hats upload error:", error)
       setHatsResult({
         success: false,
-        error: "Failed to upload file. Please try again.",
+        error: `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`,
       })
     } finally {
       setHatsLoading(false)
@@ -242,19 +283,35 @@ export function DataImport() {
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="google-ads" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="google-ads" className="gap-2">
-              <Phone className="h-4 w-4" />
-              Google Ads Calls
+        <Tabs defaultValue="google-ads-metrics" className="w-full">
+          <TabsList className="flex !w-full mb-6 h-auto p-1">
+            <TabsTrigger value="google-ads-metrics" className="flex-1 gap-2">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Google Ads</span> Metrics
             </TabsTrigger>
-            <TabsTrigger value="17hats" className="gap-2">
+            <TabsTrigger value="google-ads" className="flex-1 gap-2">
+              <Phone className="h-4 w-4" />
+              <span className="hidden sm:inline">Google Ads</span> Calls
+            </TabsTrigger>
+            <TabsTrigger value="17hats" className="flex-1 gap-2">
               <Users className="h-4 w-4" />
-              17hats Contacts
+              17hats <span className="hidden sm:inline">Contacts</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="google-ads" className="mt-0">
+          <TabsContent value="google-ads-metrics" className="mt-4">
+            <ImportDropzone
+              title="Google Ads Campaign Metrics"
+              description="Export from Google Ads: Reports > Campaigns > Download CSV. Include Date, Campaign, Cost, Clicks, Impressions, and Conversions columns."
+              icon={TrendingUp}
+              acceptedFormats="CSV format only"
+              onFileSelect={handleGoogleAdsMetricsImport}
+              isLoading={googleAdsMetricsLoading}
+              result={googleAdsMetricsResult}
+            />
+          </TabsContent>
+
+          <TabsContent value="google-ads" className="mt-4">
             <ImportDropzone
               title="Google Ads Call Details"
               description="Export from Google Ads: Reports > Call Details > Download CSV. Includes phone numbers, duration, campaign, and call status."
@@ -266,7 +323,7 @@ export function DataImport() {
             />
           </TabsContent>
 
-          <TabsContent value="17hats" className="mt-0">
+          <TabsContent value="17hats" className="mt-4">
             <ImportDropzone
               title="17hats Contacts"
               description="Export from 17hats: Contacts > Export to CSV. Includes name, email, phone, lead source, and contact details."

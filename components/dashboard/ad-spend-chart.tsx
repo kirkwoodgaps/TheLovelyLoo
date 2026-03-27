@@ -22,7 +22,6 @@ import {
 interface SpendData {
   month: string
   google: number
-  facebook: number
 }
 
 export function AdSpendChart({
@@ -62,12 +61,6 @@ export function AdSpendChart({
                 Awaiting Data
               </Badge>
             )}
-            <Badge
-              variant="outline"
-              className="text-xs text-muted-foreground border-border/60"
-            >
-              Facebook Sample
-            </Badge>
           </div>
         </div>
       </CardHeader>
@@ -120,12 +113,6 @@ export function AdSpendChart({
                   dataKey="google"
                   name="Google Ads"
                   fill="var(--color-chart-2)"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar
-                  dataKey="facebook"
-                  name="Facebook Ads"
-                  fill="var(--color-chart-3)"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>

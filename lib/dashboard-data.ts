@@ -1,5 +1,5 @@
 // Sample data for The Lovely Loo Marketing Dashboard
-// In production, this would pull from Gravity Forms API, Google Ads API, and Facebook Ads API
+// In production, this would pull from Gravity Forms API and Google Ads API
 
 export const kpiData = {
   totalLeads: 247,
@@ -17,27 +17,26 @@ export const kpiData = {
 }
 
 export const monthlyLeadsData = [
-  { month: "Sep", website: 18, googleAds: 12, facebookAds: 8 },
-  { month: "Oct", website: 22, googleAds: 15, facebookAds: 11 },
-  { month: "Nov", website: 16, googleAds: 10, facebookAds: 9 },
-  { month: "Dec", website: 12, googleAds: 8, facebookAds: 6 },
-  { month: "Jan", website: 20, googleAds: 14, facebookAds: 10 },
-  { month: "Feb", website: 28, googleAds: 18, facebookAds: 14 },
+  { month: "Sep", website: 18, googleAds: 12 },
+  { month: "Oct", website: 22, googleAds: 15 },
+  { month: "Nov", website: 16, googleAds: 10 },
+  { month: "Dec", website: 12, googleAds: 8 },
+  { month: "Jan", website: 20, googleAds: 14 },
+  { month: "Feb", website: 28, googleAds: 18 },
 ]
 
 export const adSpendData = [
-  { month: "Sep", google: 1200, facebook: 800 },
-  { month: "Oct", google: 1400, facebook: 950 },
-  { month: "Nov", google: 1100, facebook: 700 },
-  { month: "Dec", google: 900, facebook: 600 },
-  { month: "Jan", google: 1350, facebook: 850 },
-  { month: "Feb", google: 1500, facebook: 970 },
+  { month: "Sep", google: 1200 },
+  { month: "Oct", google: 1400 },
+  { month: "Nov", google: 1100 },
+  { month: "Dec", google: 900 },
+  { month: "Jan", google: 1350 },
+  { month: "Feb", google: 1500 },
 ]
 
 export const leadSourceBreakdown = [
   { name: "Website (Gravity Forms)", value: 142, fill: "var(--color-chart-1)" },
   { name: "Google Ads", value: 62, fill: "var(--color-chart-2)" },
-  { name: "Facebook Ads", value: 43, fill: "var(--color-chart-3)" },
 ]
 
 export const googleAdsMetrics = {
@@ -83,49 +82,6 @@ export const googleAdsMetrics = {
   ],
 }
 
-export const facebookAdsMetrics = {
-  spend: 4870,
-  impressions: 245600,
-  clicks: 5120,
-  ctr: 2.08,
-  conversions: 43,
-  costPerConversion: 113.26,
-  campaigns: [
-    {
-      name: "Wedding Season Promo",
-      spend: 1850,
-      impressions: 92400,
-      clicks: 2100,
-      conversions: 18,
-      ctr: 2.27,
-    },
-    {
-      name: "Event Planners Lookalike",
-      spend: 1420,
-      impressions: 78200,
-      clicks: 1540,
-      conversions: 12,
-      ctr: 1.97,
-    },
-    {
-      name: "St. Augustine Local Reach",
-      spend: 980,
-      impressions: 48600,
-      clicks: 920,
-      conversions: 8,
-      ctr: 1.89,
-    },
-    {
-      name: "Retargeting - Site Visitors",
-      spend: 620,
-      impressions: 26400,
-      clicks: 560,
-      conversions: 5,
-      ctr: 2.12,
-    },
-  ],
-}
-
 export const recentLeads = [
   {
     id: 1,
@@ -156,7 +112,7 @@ export const recentLeads = [
     name: "Emily Rodriguez",
     email: "emily.r@email.com",
     phone: "(904) 555-0267",
-    source: "Facebook Ads",
+    source: "Google Ads",
     eventType: "Festival",
     eventDate: "2026-05-10",
     location: "Jacksonville, FL",
@@ -204,7 +160,7 @@ export const recentLeads = [
     name: "Ashley Brooks",
     email: "abrooks@email.com",
     phone: "(904) 555-0523",
-    source: "Facebook Ads",
+    source: "Google Ads",
     eventType: "Wedding",
     eventDate: "2026-05-30",
     location: "Ponte Vedra, FL",

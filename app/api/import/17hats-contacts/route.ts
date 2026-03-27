@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 
+// Allow larger file uploads (up to 10MB) - App Router uses route segment config
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
+
 interface ContactRecord {
   first_name: string
   last_name: string
@@ -22,11 +26,23 @@ function parseCSV(csv: string): Record<string, string>[] {
   const lines = csv.trim().split("\n")
   if (lines.length < 2) return []
 
-  const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""))
+  // 17hats exports use tabs as delimiters
+  const delimiter = lines[0].includes("\t") ? "\t" : ","
+  
+  const headers = delimiter === "\t" 
+    ? lines[0].split("\t").map((h) => h.trim().replace(/^"|"$/g, ""))
+    : lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""))
+  
   const rows: Record<string, string>[] = []
 
   for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i])
+    const line = lines[i].trim()
+    if (!line) continue
+    
+    const values = delimiter === "\t"
+      ? line.split("\t").map(v => v.trim())
+      : parseCSVLine(line)
+    
     const row: Record<string, string> = {}
     headers.forEach((header, idx) => {
       row[header] = values[idx]?.trim().replace(/^"|"$/g, "") || ""
@@ -75,11 +91,28 @@ function parseDate(dateStr: string): string | null {
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
+    let formData: FormData
+    try {
+      formData = await request.formData()
+    } catch (formError) {
+      return NextResponse.json(
+        { error: "Failed to read form data. File may be too large (max 4MB).", details: String(formError) },
+        { status: 413 }
+      )
+    }
+    
     const file = formData.get("file") as File
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
+    
+    // Check file size (4MB limit for Vercel)
+    if (file.size > 4 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 4MB.` },
+        { status: 413 }
+      )
     }
 
     const csvText = await file.text()
@@ -90,39 +123,64 @@ export async function POST(request: NextRequest) {
     }
 
     // Map CSV columns to database columns
-    // 17hats export columns vary but typically include:
-    // First Name, Last Name, Email, Phone, Company, Lead Source, Status, Tags, Notes, etc.
-    const records: ContactRecord[] = rows.map((row) => ({
-      first_name:
-        row["First Name"] || row["First name"] || row["first_name"] || row["FirstName"] || "",
-      last_name:
-        row["Last Name"] || row["Last name"] || row["last_name"] || row["LastName"] || "",
-      email:
-        row["Email"] || row["email"] || row["E-mail"] || row["Email Address"] || "",
-      phone:
-        row["Phone"] || row["phone"] || row["Phone Number"] || row["Mobile"] || row["Cell"] || "",
-      company:
-        row["Company"] || row["company"] || row["Business"] || row["Company Name"] || null,
-      lead_source:
-        row["Lead Source"] || row["Source"] || row["lead_source"] || row["Referral Source"] || null,
-      status:
-        row["Status"] || row["status"] || row["Contact Status"] || null,
-      tags:
-        row["Tags"] || row["tags"] || row["Categories"] || null,
-      notes:
-        row["Notes"] || row["notes"] || row["Comments"] || row["Description"] || null,
-      address:
-        row["Address"] || row["address"] || row["Street"] || row["Street Address"] || null,
-      city:
-        row["City"] || row["city"] || null,
-      state:
-        row["State"] || row["state"] || row["Province"] || null,
-      zip:
-        row["Zip"] || row["zip"] || row["ZIP"] || row["Postal Code"] || row["Zip Code"] || null,
-      created_date: parseDate(
-        row["Created Date"] || row["Created"] || row["Date Created"] || row["created_date"] || ""
-      ),
-    }))
+    // 17hats export has: Full Name, First Name, Last Name, Company Name, Type, Email, and many phone columns
+    // Phone columns are named after contacts (e.g., "Brenda Phone", "Rich Phone")
+    // We need to find any non-empty email and phone values
+    const records: ContactRecord[] = rows.map((row) => {
+      // Find the first non-empty email (17hats has many email columns)
+      let email = row["Email"] || ""
+      if (!email) {
+        // Look for "Primary Email" or any column ending with "Email" that has a value
+        for (const [key, value] of Object.entries(row)) {
+          if (key.toLowerCase().includes("email") && value && value.includes("@")) {
+            email = value
+            break
+          }
+        }
+      }
+      
+      // Find the first non-empty phone (17hats has many phone columns)
+      let phone = row["Phone"] || ""
+      if (!phone) {
+        // Look for any column ending with "Phone" that has a value
+        for (const [key, value] of Object.entries(row)) {
+          if (key.toLowerCase().includes("phone") && value && value.match(/\d/)) {
+            phone = value
+            break
+          }
+        }
+      }
+      
+      return {
+        first_name:
+          row["First Name"] || row["First name"] || row["first_name"] || row["FirstName"] || "",
+        last_name:
+          row["Last Name"] || row["Last name"] || row["last_name"] || row["LastName"] || "",
+        email,
+        phone,
+        company:
+          row["Company Name"] || row["Company"] || row["company"] || row["Business"] || null,
+        lead_source:
+          row["Lead Source"] || row["Source"] || row["lead_source"] || row["Referral Source"] || null,
+        status:
+          row["Type"] || row["Status"] || row["status"] || row["Contact Status"] || null,
+        tags:
+          row["Tags"] || row["tags"] || row["Categories"] || null,
+        notes:
+          row["Notes"] || row["notes"] || row["Comments"] || row["Description"] || null,
+        address:
+          row["Address"] || row["address"] || row["Street"] || row["Street Address"] || null,
+        city:
+          row["City"] || row["city"] || null,
+        state:
+          row["State"] || row["state"] || row["Province"] || null,
+        zip:
+          row["Zip"] || row["zip"] || row["ZIP"] || row["Postal Code"] || row["Zip Code"] || null,
+        created_date: parseDate(
+          row["Created Date"] || row["Created"] || row["Date Created"] || row["created_date"] || ""
+        ),
+      }
+    })
 
     // Filter out records without email or phone
     const validRecords = records.filter((r) => r.email || r.phone)
@@ -142,7 +200,6 @@ export async function POST(request: NextRequest) {
       .select()
 
     if (error) {
-      console.error("Import error:", error)
       return NextResponse.json(
         { error: "Failed to import records", details: error.message },
         { status: 500 }

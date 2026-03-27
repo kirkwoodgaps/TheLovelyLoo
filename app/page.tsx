@@ -1,18 +1,20 @@
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { KpiCards } from "@/components/dashboard/kpi-cards"
 import { LeadsOverTimeChart } from "@/components/dashboard/leads-over-time-chart"
-import { AdSpendChart } from "@/components/dashboard/ad-spend-chart"
 import { LeadSourcesChart } from "@/components/dashboard/lead-sources-chart"
 import { WeeklyActivity } from "@/components/dashboard/weekly-activity"
-import { CampaignTables } from "@/components/dashboard/campaign-tables"
-import { PhoneCallLog } from "@/components/dashboard/phone-call-log"
 import { RecentLeadsTable } from "@/components/dashboard/recent-leads-table"
 import { DataImport } from "@/components/dashboard/data-import"
 import { ImportedCallsTable } from "@/components/dashboard/imported-calls-table"
 import { ImportedContactsTable } from "@/components/dashboard/imported-contacts-table"
+import { MatchedContactsTable } from "@/components/dashboard/matched-contacts-table"
+import { GA4Card } from "@/components/dashboard/ga4-card"
 import { getDashboardData } from "@/lib/gravity-forms"
 import { fetchGoogleAdsSummary } from "@/lib/google-ads"
-import { facebookAdsMetrics } from "@/lib/dashboard-data"
+import { fetchGoogleAdsData } from "@/lib/google-ads-api"
+import { fetchImportedGoogleAdsMetrics } from "@/lib/google-ads-imported"
+import { fetchGA4Data } from "@/lib/ga4"
+import { isConnected } from "@/lib/google-oauth"
 
 const RANGE_CONFIG: Record<string, { days: number; label: string }> = {
   "7days": { days: 7, label: "Last 7 days" },
@@ -34,13 +36,69 @@ export default async function DashboardPage({
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - cutoffDays)
 
-  const [gfResult, googleAdsResult] = await Promise.allSettled([
+  // Format dates for API calls
+  const startDate = cutoffDate.toISOString().split("T")[0]
+  const endDate = new Date().toISOString().split("T")[0]
+
+  const [
+    gfResult, 
+    googleAdsSheetResult, 
+    googleAdsApiResult, 
+    googleAdsImportedResult,
+    ga4Result,
+    googleConnectedResult,
+  ] = await Promise.allSettled([
     getDashboardData(),
     fetchGoogleAdsSummary(),
+    fetchGoogleAdsData(), // Direct API (preferred if credentials configured)
+    fetchImportedGoogleAdsMetrics(), // CSV imported data (second preference)
+    // GA4 - using property ID
+    fetchGA4Data(process.env.GA4_PROPERTY_ID || "", startDate, endDate),
+    isConnected("google_analytics"),
   ])
 
   const data = gfResult.status === "fulfilled" ? gfResult.value : null
-  const googleAds = googleAdsResult.status === "fulfilled" ? googleAdsResult.value : null
+  const googleAdsFromSheet = googleAdsSheetResult.status === "fulfilled" ? googleAdsSheetResult.value : null
+  const googleAdsFromApi = googleAdsApiResult.status === "fulfilled" ? googleAdsApiResult.value : null
+  const googleAdsFromImport = googleAdsImportedResult.status === "fulfilled" ? googleAdsImportedResult.value : null
+  const ga4Data = ga4Result.status === "fulfilled" ? ga4Result.value : null
+  const googleConnected = googleConnectedResult.status === "fulfilled" ? googleConnectedResult.value : false
+  
+  // Priority: Direct API > Imported CSV > Spreadsheet
+  const useDirectApi = googleAdsFromApi?.hasData
+  const useImported = !useDirectApi && googleAdsFromImport?.hasData
+  
+  const googleAds = useDirectApi ? {
+    hasData: true,
+    totalSpend: googleAdsFromApi.summary.totalSpend,
+    totalConversions: googleAdsFromApi.summary.totalConversions,
+    totalClicks: googleAdsFromApi.summary.totalClicks,
+    totalImpressions: googleAdsFromApi.summary.totalImpressions,
+    avgCtr: googleAdsFromApi.summary.totalImpressions > 0 
+      ? (googleAdsFromApi.summary.totalClicks / googleAdsFromApi.summary.totalImpressions) * 100 
+      : 0,
+    costPerConversion: googleAdsFromApi.summary.totalConversions > 0
+      ? googleAdsFromApi.summary.totalSpend / googleAdsFromApi.summary.totalConversions
+      : 0,
+    daily: googleAdsFromApi.daily.map(d => ({
+      date: d.date,
+      spend: d.cost,
+      clicks: d.clicks,
+      impressions: d.impressions,
+      conversions: d.conversions,
+    })),
+    monthly: aggregateToMonthly(googleAdsFromApi.daily),
+    campaigns: googleAdsFromApi.campaigns.map(c => ({
+      name: c.campaign,
+      spend: c.cost,
+      impressions: c.impressions,
+      clicks: c.clicks,
+      conversions: c.conversions,
+      ctr: c.impressions > 0 ? (c.clicks / c.impressions) * 100 : 0,
+      phoneCalls: 0,
+    })),
+    callRecords: [],
+  } : useImported ? googleAdsFromImport : googleAdsFromSheet
 
   // If both sources failed, show error
   if (!data && !googleAds) {
@@ -72,13 +130,10 @@ export default async function DashboardPage({
   const rangeGoogleImpressions = filteredDaily.reduce((s, d) => s + d.impressions, 0)
   const rangeGoogleConversions = filteredDaily.reduce((s, d) => s + d.conversions, 0)
 
-  // ── Filter Gravity Forms leads to range ──────────────────
-  // monthlyData uses short month names but has a year field
-  const filteredMonthlyLeads = (data?.monthlyData ?? []).filter((m) => {
-    const d = new Date(m.month + "-01")
-    return d >= cutoffDate
-  })
-  const rangeLeadTotal = filteredMonthlyLeads.reduce((s, m) => s + m.total, 0)
+  // ── Gravity Forms leads - always show all available months for the chart
+  // The date range filter applies to Google Ads data, not the leads over time chart
+  const monthlyLeadsData = data?.monthlyData ?? []
+  const rangeLeadTotal = monthlyLeadsData.reduce((s, m) => s + m.total, 0)
 
   // current month vs previous month (always uses current/prev regardless of range)
   const leadsChange =
@@ -100,103 +155,103 @@ export default async function DashboardPage({
     formCounts: data?.forms ?? [],
     googleAdsSpend: rangeGoogleSpend,
     googleAdsConversions: rangeGoogleConversions,
-    googleAdsPhoneCalls: filteredCallRecords.length,
     hasGoogleAds: googleAds?.hasData ?? false,
     rangeLabel,
+    currentRange: range,
   }
 
-  // ── Ad Spend chart from filtered monthly ─────────────────
-  const adSpendData = googleAds?.hasData
-    ? filteredMonthly.map((m) => ({
-        month: formatMonthLabel(m.month),
-        google: m.spend,
-        facebook: 0,
+  // ── Google Ads campaign metrics (filtered by selected date range) ──
+  // Compute campaign-level metrics from filtered raw data
+  const filteredCampaigns = (() => {
+    // Use raw metrics if available (imported data) for date-filtered campaign breakdown
+    if (googleAdsFromImport?.rawMetrics) {
+      const campaignMap = new Map<string, { name: string; spend: number; clicks: number; impressions: number; conversions: number; phoneCalls: number }>()
+      
+      for (const m of googleAdsFromImport.rawMetrics) {
+        if (new Date(m.date) < cutoffDate) continue // Filter by date range
+        
+        const existing = campaignMap.get(m.campaign) || { 
+          name: m.campaign, spend: 0, clicks: 0, impressions: 0, conversions: 0, phoneCalls: 0 
+        }
+        existing.spend += m.cost
+        existing.clicks += m.clicks
+        existing.impressions += m.impressions
+        existing.conversions += m.conversions
+        campaignMap.set(m.campaign, existing)
+      }
+      
+      return Array.from(campaignMap.values()).map(c => ({
+        ...c,
+        ctr: c.impressions > 0 ? Math.round((c.clicks / c.impressions) * 10000) / 100 : 0,
       }))
-    : []
+    }
+    
+    // Fallback to all-time campaigns if no raw data
+    return googleAds?.campaigns.map((c) => ({
+      name: c.name,
+      spend: c.spend,
+      impressions: c.impressions,
+      clicks: c.clicks,
+      conversions: c.conversions,
+      ctr: Math.round(c.ctr * 100) / 100,
+      phoneCalls: c.phoneCalls,
+    })) ?? []
+  })()
 
-  // ── Google Ads campaign metrics (always 90-day from sheet) ──
   const googleMetrics = googleAds?.hasData
     ? {
-        spend: googleAds.totalSpend,
-        impressions: googleAds.totalImpressions,
-        clicks: googleAds.totalClicks,
-        ctr: Math.round(googleAds.avgCtr * 100) / 100,
-        conversions: googleAds.totalConversions,
-        costPerConversion: googleAds.costPerConversion,
-        campaigns: googleAds.campaigns.map((c) => ({
-          name: c.name,
-          spend: c.spend,
-          impressions: c.impressions,
-          clicks: c.clicks,
-          conversions: c.conversions,
-          ctr: Math.round(c.ctr * 100) / 100,
-          phoneCalls: c.phoneCalls,
-        })),
+        spend: rangeGoogleSpend,
+        impressions: rangeGoogleImpressions,
+        clicks: rangeGoogleClicks,
+        ctr: rangeGoogleImpressions > 0 ? Math.round((rangeGoogleClicks / rangeGoogleImpressions) * 10000) / 100 : 0,
+        conversions: rangeGoogleConversions,
+        costPerConversion: rangeGoogleConversions > 0 ? rangeGoogleSpend / rangeGoogleConversions : 0,
+        campaigns: filteredCampaigns,
       }
     : null
 
-  // ── Data source statuses ─────────────────────────────────
+  // ── Data source statuses ────────────────���────────────────
   const sources = [
     { name: "Gravity Forms", status: data ? "live" as const : "error" as const },
     { name: "Google Ads", status: googleAds?.hasData ? "live" as const : "pending" as const },
-    { name: "Facebook Ads", status: "sample" as const },
   ]
 
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-        <DashboardHeader sources={sources} currentRange={range} />
+        <DashboardHeader sources={sources} />
 
-        {/* KPI Cards */}
+        {/* KPI Cards - Lifetime Totals, Selected Period, and Campaign Performance */}
         <section className="mt-6" aria-label="Key performance indicators">
-          <KpiCards data={kpi} />
+          <KpiCards data={kpi} googleMetrics={googleMetrics} />
         </section>
 
-        {/* Charts Row */}
+        {/* Leads Charts Row */}
         <section
           className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3"
-          aria-label="Charts"
+          aria-label="Leads charts"
         >
           <div className="lg:col-span-2">
-            <LeadsOverTimeChart data={filteredMonthlyLeads} />
+            <LeadsOverTimeChart data={monthlyLeadsData} />
           </div>
           <div>
-            <LeadSourcesChart data={data?.formBreakdown ?? []} />
+            <LeadSourcesChart data={[...(data?.formBreakdown ?? [])].sort((a, b) => b.value - a.value)} />
           </div>
         </section>
 
-        {/* Ad Spend + Weekly Activity */}
-        <section
-          className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3"
-          aria-label="Ad spend and weekly activity"
-        >
-          <div className="lg:col-span-2">
-            <AdSpendChart
-              data={adSpendData}
-              hasGoogleData={googleAds?.hasData ?? false}
-            />
-          </div>
-          <div>
-            <WeeklyActivity data={data?.weeklyData ?? []} />
-          </div>
+        {/* This Week */}
+        <section className="mt-4" aria-label="This week activity">
+          <WeeklyActivity data={data?.weeklyData ?? []} />
         </section>
 
-        {/* Campaign Performance */}
-        <section className="mt-4" aria-label="Campaign performance">
-          <CampaignTables
-            googleMetrics={googleMetrics}
-            facebookMetrics={facebookAdsMetrics}
-          />
+        {/* GA4 Analytics */}
+        <section className="mt-6" aria-label="Google Analytics">
+          <GA4Card data={ga4Data} isConnected={googleConnected} />
         </section>
 
-        {/* Phone Call Report */}
-        <section className="mt-4" aria-label="Phone call report">
-          <PhoneCallLog calls={filteredCallRecords} />
-        </section>
-
-        {/* Recent Leads */}
-        <section className="mt-4" aria-label="Recent leads">
-          <RecentLeadsTable leads={data?.recentLeads ?? []} />
+        {/* Matched Contacts Section */}
+        <section className="mt-8" aria-label="Matched contacts">
+          <MatchedContactsTable />
         </section>
 
         {/* Imported Data Section */}
@@ -211,6 +266,11 @@ export default async function DashboardPage({
           
           {/* Imported 17hats Contacts (shows only if data exists) */}
           <ImportedContactsTable />
+        </section>
+
+        {/* Recent Leads */}
+        <section className="mt-8" aria-label="Recent leads">
+          <RecentLeadsTable leads={data?.recentLeads ?? []} />
         </section>
 
         {/* Footer */}
@@ -233,4 +293,21 @@ function formatMonthLabel(yyyyMm: string): string {
   const [year, month] = yyyyMm.split("-")
   const date = new Date(parseInt(year), parseInt(month) - 1)
   return date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+}
+
+// Helper to aggregate daily data to monthly for API data
+function aggregateToMonthly(daily: { date: string; cost: number; clicks: number; impressions: number; conversions: number }[]) {
+  const monthlyMap = new Map<string, { month: string; spend: number; clicks: number; impressions: number; conversions: number }>()
+  
+  for (const d of daily) {
+    const month = d.date.substring(0, 7) // YYYY-MM
+    const existing = monthlyMap.get(month) || { month, spend: 0, clicks: 0, impressions: 0, conversions: 0 }
+    existing.spend += d.cost
+    existing.clicks += d.clicks
+    existing.impressions += d.impressions
+    existing.conversions += d.conversions
+    monthlyMap.set(month, existing)
+  }
+  
+  return Array.from(monthlyMap.values()).sort((a, b) => a.month.localeCompare(b.month))
 }
