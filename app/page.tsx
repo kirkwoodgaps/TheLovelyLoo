@@ -209,14 +209,17 @@ export default async function DashboardPage({
           <KpiCards data={kpi} />
         </section>
 
-        {/* Leads Over Time */}
-        <section className="mt-6" aria-label="Leads over time">
-          <LeadsOverTimeChart data={monthlyLeadsData} />
-        </section>
-
-        {/* Leads by Form */}
-        <section className="mt-4" aria-label="Leads by form">
-          <LeadSourcesChart data={[...(data?.formBreakdown ?? [])].sort((a, b) => b.value - a.value)} />
+        {/* Leads Charts Row */}
+        <section
+          className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3"
+          aria-label="Leads charts"
+        >
+          <div className="lg:col-span-2">
+            <LeadsOverTimeChart data={monthlyLeadsData} />
+          </div>
+          <div>
+            <LeadSourcesChart data={[...(data?.formBreakdown ?? [])].sort((a, b) => b.value - a.value)} />
+          </div>
         </section>
 
         {/* This Week */}
