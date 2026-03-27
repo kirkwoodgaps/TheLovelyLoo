@@ -14,7 +14,7 @@ interface GoogleAdsRow {
 
 // Common column name variations for Google Ads exports
 const COLUMN_MAPPINGS: Record<string, string[]> = {
-  date: ["date", "day", "report date"],
+  date: ["date", "day", "report date", "campaign start date", "start date"],
   campaign: ["campaign", "campaign name"],
   cost: ["cost", "spend", "cost (usd)", "amount spent", "cost (all)"],
   clicks: ["clicks", "link clicks"],
@@ -59,6 +59,22 @@ function parseDate(value: string): string | null {
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
   }
   
+  // Format: D-MMM-YY or DD-MMM-YY (e.g., "9-Jan-26" or "16-Jul-25")
+  const shortDateMatch = cleaned.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/)
+  if (shortDateMatch) {
+    const [, day, monthStr, yearShort] = shortDateMatch
+    const months: Record<string, string> = {
+      jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+      jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12"
+    }
+    const month = months[monthStr.toLowerCase()]
+    if (month) {
+      // Assume 20xx for years
+      const year = parseInt(yearShort) > 50 ? `19${yearShort}` : `20${yearShort}`
+      return `${year}-${month}-${day.padStart(2, "0")}`
+    }
+  }
+  
   // Format: MMM DD, YYYY (e.g., "Mar 15, 2026")
   const dateObj = new Date(cleaned)
   if (!isNaN(dateObj.getTime())) {
@@ -85,9 +101,13 @@ export async function POST(request: Request) {
 
     // Find header row (skip any summary rows at the top)
     let headerIndex = 0
-    for (let i = 0; i < Math.min(5, lines.length); i++) {
+    for (let i = 0; i < Math.min(10, lines.length); i++) {
       const lowerLine = lines[i].toLowerCase()
-      if (lowerLine.includes("date") || lowerLine.includes("campaign") || lowerLine.includes("day")) {
+      // Look for lines that have multiple expected column headers
+      const hasDateCol = lowerLine.includes("date") || lowerLine.includes("day")
+      const hasCampaignCol = lowerLine.includes("campaign")
+      const hasCostCol = lowerLine.includes("cost")
+      if ((hasDateCol && hasCampaignCol) || (hasDateCol && hasCostCol) || (hasCampaignCol && hasCostCol)) {
         headerIndex = i
         break
       }
