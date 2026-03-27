@@ -140,6 +140,7 @@ export default async function DashboardPage({
     googleAdsConversions: rangeGoogleConversions,
     hasGoogleAds: googleAds?.hasData ?? false,
     rangeLabel,
+    currentRange: range,
   }
 
   // ── Google Ads campaign metrics (filtered by selected date range) ──
@@ -201,7 +202,7 @@ export default async function DashboardPage({
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-        <DashboardHeader sources={sources} currentRange={range} />
+        <DashboardHeader sources={sources} />
 
         {/* KPI Cards */}
         <section className="mt-6" aria-label="Key performance indicators">

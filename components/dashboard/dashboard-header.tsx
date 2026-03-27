@@ -1,15 +1,5 @@
-"use client"
-
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { useRouter, usePathname } from "next/navigation"
 
 type SourceStatus = {
   name: string
@@ -18,32 +8,9 @@ type SourceStatus = {
 
 export function DashboardHeader({
   sources,
-  currentRange = "6months",
 }: {
   sources: SourceStatus[]
-  currentRange?: string
 }) {
-  const router = useRouter()
-  const pathname = usePathname()
-
-  function handleRangeChange(value: string) {
-    const params = new URLSearchParams()
-    if (value !== "6months") {
-      params.set("range", value)
-    }
-    const qs = params.toString()
-    router.push(qs ? `${pathname}?${qs}` : pathname)
-  }
-
-  const rangeLabels: Record<string, string> = {
-    "7days": "Last 7 days",
-    "30days": "Last 30 days",
-    "3months": "Last 3 months",
-    "6months": "Last 6 months",
-    "12months": "Last 12 months",
-    "alltime": "All time",
-  }
-
   return (
     <header className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -61,21 +28,6 @@ export function DashboardHeader({
           <p className="text-sm text-muted-foreground hidden sm:block">
             Leads & Ad Spend Dashboard
           </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={currentRange} onValueChange={handleRangeChange}>
-            <SelectTrigger className="w-[160px] border-border/60 bg-card text-sm">
-              <SelectValue>{rangeLabels[currentRange] || "Last 6 months"}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7days">Last 7 days</SelectItem>
-              <SelectItem value="30days">Last 30 days</SelectItem>
-              <SelectItem value="3months">Last 3 months</SelectItem>
-              <SelectItem value="6months">Last 6 months</SelectItem>
-              <SelectItem value="12months">Last 12 months</SelectItem>
-              <SelectItem value="alltime">All time</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
