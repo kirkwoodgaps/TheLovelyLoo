@@ -100,7 +100,6 @@ export default async function DashboardPage({
     formCounts: data?.forms ?? [],
     googleAdsSpend: rangeGoogleSpend,
     googleAdsConversions: rangeGoogleConversions,
-    googleAdsPhoneCalls: filteredCallRecords.length,
     hasGoogleAds: googleAds?.hasData ?? false,
     rangeLabel,
   }

@@ -10,7 +10,6 @@ import {
   ClipboardList,
   DollarSign,
   Target,
-  Phone,
 } from "lucide-react"
 
 interface KpiData {
@@ -22,7 +21,6 @@ interface KpiData {
   formCounts: { id: string; title: string; totalEntries: number }[]
   googleAdsSpend?: number
   googleAdsConversions?: number
-  googleAdsPhoneCalls?: number
   hasGoogleAds?: boolean
   rangeLabel?: string
 }
@@ -108,13 +106,6 @@ export function KpiCards({ data }: { data: KpiData }) {
       label: "Google Conversions",
       value: formatNumber(data.googleAdsConversions || 0),
       icon: Target,
-      showTrend: false,
-      sublabel: rl,
-    })
-    cards.push({
-      label: "Phone Calls",
-      value: formatNumber(data.googleAdsPhoneCalls || 0),
-      icon: Phone,
       showTrend: false,
       sublabel: rl,
     })
