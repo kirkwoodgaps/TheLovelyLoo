@@ -47,9 +47,18 @@ export default async function DashboardPage({
   const googleAdsFromApi = googleAdsApiResult.status === "fulfilled" ? googleAdsApiResult.value : null
   const googleAdsFromImport = googleAdsImportedResult.status === "fulfilled" ? googleAdsImportedResult.value : null
   
+  console.log("[v0] Google Ads data sources:")
+  console.log("[v0] - API hasData:", googleAdsFromApi?.hasData)
+  console.log("[v0] - Import hasData:", googleAdsFromImport?.hasData)
+  console.log("[v0] - Import daily count:", googleAdsFromImport?.daily?.length)
+  console.log("[v0] - Import totalSpend:", googleAdsFromImport?.totalSpend)
+  console.log("[v0] - Sheet hasData:", googleAdsFromSheet?.hasData)
+  
   // Priority: Direct API > Imported CSV > Spreadsheet
   const useDirectApi = googleAdsFromApi?.hasData
   const useImported = !useDirectApi && googleAdsFromImport?.hasData
+  
+  console.log("[v0] Using source:", useDirectApi ? "API" : useImported ? "Imported" : "Sheet")
   
   const googleAds = useDirectApi ? {
     hasData: true,
