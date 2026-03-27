@@ -55,17 +55,38 @@ export async function fetchImportedGoogleAdsMetrics(): Promise<ImportedGoogleAds
   try {
     const supabase = await createClient()
     
-    // Supabase has a 1000 row default limit, use range to get all rows
-    const { data: metrics, error } = await supabase
-      .from("google_ads_metrics")
-      .select("*")
-      .order("date", { ascending: true })
-      .range(0, 9999) // Get up to 10000 rows
+    // Supabase has a 1000 row default limit - paginate to get all rows
+    const allMetrics: ImportedMetric[] = []
+    let offset = 0
+    const pageSize = 1000
+    
+    while (true) {
+      const { data: page, error } = await supabase
+        .from("google_ads_metrics")
+        .select("*")
+        .order("date", { ascending: true })
+        .range(offset, offset + pageSize - 1)
 
-    if (error) {
-      console.error("Error fetching imported Google Ads metrics:", error)
-      return null
+      if (error) {
+        console.error("Error fetching imported Google Ads metrics:", error)
+        return null
+      }
+
+      if (!page || page.length === 0) {
+        break
+      }
+      
+      allMetrics.push(...(page as ImportedMetric[]))
+      
+      // If we got less than a full page, we're done
+      if (page.length < pageSize) {
+        break
+      }
+      
+      offset += pageSize
     }
+    
+    const metrics = allMetrics
 
     if (!metrics || metrics.length === 0) {
       return null
