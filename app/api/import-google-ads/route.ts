@@ -99,6 +99,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "CSV must have headers and at least one data row" }, { status: 400 })
     }
 
+    // Detect delimiter (tab or comma)
+    const firstDataLine = lines.find(l => l.includes("\t") || l.includes(",")) || ""
+    const delimiter = firstDataLine.includes("\t") ? "\t" : ","
+
     // Find header row (skip any summary rows at the top)
     let headerIndex = 0
     for (let i = 0; i < Math.min(10, lines.length); i++) {
@@ -113,7 +117,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const headers = lines[headerIndex].split(",").map(h => h.replace(/"/g, "").trim())
+    const headers = lines[headerIndex].split(delimiter).map(h => h.replace(/"/g, "").trim())
     
     // Find column indices
     const dateIdx = findColumn(headers, "date")
@@ -137,14 +141,14 @@ export async function POST(request: Request) {
       const line = lines[i]
       if (!line.trim()) continue
       
-      // Handle CSV with quoted fields
+      // Handle CSV/TSV with quoted fields
       const values: string[] = []
       let current = ""
       let inQuotes = false
       for (const char of line) {
         if (char === '"') {
           inQuotes = !inQuotes
-        } else if (char === "," && !inQuotes) {
+        } else if ((char === delimiter || (delimiter === "," && char === ",") || (delimiter === "\t" && char === "\t")) && !inQuotes) {
           values.push(current.trim())
           current = ""
         } else {
