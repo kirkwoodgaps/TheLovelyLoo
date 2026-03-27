@@ -162,7 +162,7 @@ export function MatchedContactsTable() {
             <div>
               <CardTitle className="text-base font-semibold">Matched Contacts</CardTitle>
               <CardDescription>
-                17hats contacts matched to Call Records or Recent Leads by phone number
+                17hats contacts matched to Call Records or Website form leads by phone number
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={fetchMatches}>
@@ -173,7 +173,7 @@ export function MatchedContactsTable() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm py-8 text-center">
-            No matches found between 17hats contacts and call records or leads.
+            No matches found between 17hats contacts and call records or website form leads.
           </p>
         </CardContent>
       </Card>
@@ -276,7 +276,7 @@ export function MatchedContactsTable() {
                                 : "border-emerald-300 bg-emerald-50 text-emerald-700 text-xs"
                             }
                           >
-                            {source}
+                            {source === "Recent Leads" ? "Website form leads" : source}
                           </Badge>
                         ))}
                       </div>
@@ -320,7 +320,7 @@ export function MatchedContactsTable() {
                             <div>
                               <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
                                 <FileText className="h-4 w-4" />
-                                Matched Recent Leads ({match.matchedLeads.length})
+                                Matched Website Form Leads ({match.matchedLeads.length})
                               </h4>
                               <div className="space-y-1 text-sm">
                                 {match.matchedLeads.slice(0, 5).map((lead) => (
