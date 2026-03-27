@@ -54,9 +54,15 @@ export default async function DashboardPage({
   }
 
   // ── Filter Google Ads to range ───────────────────────────
+  console.log("[v0] Cutoff date:", cutoffDate.toISOString())
+  console.log("[v0] Google Ads daily count:", googleAds?.daily.length)
+  console.log("[v0] Google Ads daily dates:", googleAds?.daily.slice(0, 5).map(d => d.date))
+  console.log("[v0] Google Ads daily latest:", googleAds?.daily[googleAds.daily.length - 1]?.date)
+  
   const filteredDaily = googleAds?.daily.filter(
     (d) => new Date(d.date) >= cutoffDate
   ) ?? []
+  console.log("[v0] Filtered daily count:", filteredDaily.length)
   const filteredMonthly = googleAds?.monthly.filter((m) => {
     const d = new Date(m.month + "-01")
     return d >= cutoffDate
