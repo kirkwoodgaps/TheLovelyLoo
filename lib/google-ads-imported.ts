@@ -37,6 +37,15 @@ interface CampaignData {
   phoneCalls: number
 }
 
+interface RawMetric {
+  date: string
+  campaign: string
+  cost: number
+  clicks: number
+  impressions: number
+  conversions: number
+}
+
 export interface ImportedGoogleAdsData {
   hasData: boolean
   totalSpend: number
@@ -49,6 +58,7 @@ export interface ImportedGoogleAdsData {
   monthly: MonthlyData[]
   campaigns: CampaignData[]
   callRecords: never[]
+  rawMetrics: RawMetric[] // Raw data for custom filtering
 }
 
 export async function fetchImportedGoogleAdsMetrics(): Promise<ImportedGoogleAdsData | null> {
@@ -142,6 +152,16 @@ export async function fetchImportedGoogleAdsMetrics(): Promise<ImportedGoogleAds
     const totalImpressions = daily.reduce((s, d) => s + d.impressions, 0)
     const totalConversions = daily.reduce((s, d) => s + d.conversions, 0)
 
+    // Create raw metrics for custom filtering
+    const rawMetrics: RawMetric[] = (metrics as ImportedMetric[]).map(m => ({
+      date: m.date,
+      campaign: m.campaign || "Unknown Campaign",
+      cost: Number(m.cost) || 0,
+      clicks: Number(m.clicks) || 0,
+      impressions: Number(m.impressions) || 0,
+      conversions: Number(m.conversions) || 0,
+    }))
+
     return {
       hasData: true,
       totalSpend,
@@ -154,6 +174,7 @@ export async function fetchImportedGoogleAdsMetrics(): Promise<ImportedGoogleAds
       monthly,
       campaigns,
       callRecords: [],
+      rawMetrics,
     }
   } catch (error) {
     console.error("Error in fetchImportedGoogleAdsMetrics:", error)

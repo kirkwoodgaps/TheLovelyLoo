@@ -142,24 +142,53 @@ export default async function DashboardPage({
     rangeLabel,
   }
 
-  // ── Google Ads campaign metrics (always 90-day from sheet) ──
+  // ── Google Ads campaign metrics (filtered by selected date range) ──
+  // Compute campaign-level metrics from filtered raw data
+  const filteredCampaigns = (() => {
+    // Use raw metrics if available (imported data) for date-filtered campaign breakdown
+    if (googleAdsFromImport?.rawMetrics) {
+      const campaignMap = new Map<string, { name: string; spend: number; clicks: number; impressions: number; conversions: number; phoneCalls: number }>()
+      
+      for (const m of googleAdsFromImport.rawMetrics) {
+        if (new Date(m.date) < cutoffDate) continue // Filter by date range
+        
+        const existing = campaignMap.get(m.campaign) || { 
+          name: m.campaign, spend: 0, clicks: 0, impressions: 0, conversions: 0, phoneCalls: 0 
+        }
+        existing.spend += m.cost
+        existing.clicks += m.clicks
+        existing.impressions += m.impressions
+        existing.conversions += m.conversions
+        campaignMap.set(m.campaign, existing)
+      }
+      
+      return Array.from(campaignMap.values()).map(c => ({
+        ...c,
+        ctr: c.impressions > 0 ? Math.round((c.clicks / c.impressions) * 10000) / 100 : 0,
+      }))
+    }
+    
+    // Fallback to all-time campaigns if no raw data
+    return googleAds?.campaigns.map((c) => ({
+      name: c.name,
+      spend: c.spend,
+      impressions: c.impressions,
+      clicks: c.clicks,
+      conversions: c.conversions,
+      ctr: Math.round(c.ctr * 100) / 100,
+      phoneCalls: c.phoneCalls,
+    })) ?? []
+  })()
+
   const googleMetrics = googleAds?.hasData
     ? {
-        spend: googleAds.totalSpend,
-        impressions: googleAds.totalImpressions,
-        clicks: googleAds.totalClicks,
-        ctr: Math.round(googleAds.avgCtr * 100) / 100,
-        conversions: googleAds.totalConversions,
-        costPerConversion: googleAds.costPerConversion,
-        campaigns: googleAds.campaigns.map((c) => ({
-          name: c.name,
-          spend: c.spend,
-          impressions: c.impressions,
-          clicks: c.clicks,
-          conversions: c.conversions,
-          ctr: Math.round(c.ctr * 100) / 100,
-          phoneCalls: c.phoneCalls,
-        })),
+        spend: rangeGoogleSpend,
+        impressions: rangeGoogleImpressions,
+        clicks: rangeGoogleClicks,
+        ctr: rangeGoogleImpressions > 0 ? Math.round((rangeGoogleClicks / rangeGoogleImpressions) * 10000) / 100 : 0,
+        conversions: rangeGoogleConversions,
+        costPerConversion: rangeGoogleConversions > 0 ? rangeGoogleSpend / rangeGoogleConversions : 0,
+        campaigns: filteredCampaigns,
       }
     : null
 
