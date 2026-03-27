@@ -21,6 +21,7 @@ interface CallRecord {
   caller_country_code: string
   caller_area_code: string
   caller_phone_number: string
+  recording_url: string
   status: string
   call_source: string
   call_type: string
@@ -174,37 +175,64 @@ export function ImportedCallsTable() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[160px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Date/Time
-                    </TableHead>
                     <TableHead className="w-[150px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Phone Number
+                      Start Time
                     </TableHead>
                     <TableHead className="w-[80px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Duration
                     </TableHead>
-                    <TableHead className="w-[100px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="w-[60px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Country
+                    </TableHead>
+                    <TableHead className="w-[70px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Area Code
+                    </TableHead>
+                    <TableHead className="w-[140px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Phone Number
+                    </TableHead>
+                    <TableHead className="w-[80px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Recording
+                    </TableHead>
+                    <TableHead className="w-[90px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Status
                     </TableHead>
-                    <TableHead className="min-w-[200px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Campaign
+                    <TableHead className="w-[100px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Call Source
                     </TableHead>
                     <TableHead className="w-[120px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Call Type
+                    </TableHead>
+                    <TableHead className="min-w-[180px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Campaign
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {calls.slice(0, 50).map((call) => (
                     <TableRow key={call.id} className="group">
-                      <TableCell className="py-3 text-sm text-foreground">
+                      <TableCell className="py-3 text-sm text-foreground whitespace-nowrap">
                         {formatDateTime(call.start_time)}
+                      </TableCell>
+                      <TableCell className="py-3 font-mono text-sm text-muted-foreground">
+                        {formatDuration(call.duration_seconds)}
+                      </TableCell>
+                      <TableCell className="py-3 text-sm text-muted-foreground text-center">
+                        {call.caller_country_code || "-"}
+                      </TableCell>
+                      <TableCell className="py-3 font-mono text-sm text-muted-foreground">
+                        {call.caller_area_code || "-"}
                       </TableCell>
                       <TableCell className="py-3 font-mono text-sm font-medium text-foreground">
                         {formatPhoneNumber(call.caller_phone_number)}
                       </TableCell>
-                      <TableCell className="py-3 font-mono text-sm text-muted-foreground">
-                        {formatDuration(call.duration_seconds)}
+                      <TableCell className="py-3 text-sm text-muted-foreground">
+                        {call.recording_url ? (
+                          <a href={call.recording_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            View
+                          </a>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                       <TableCell className="py-3">
                         <Badge
@@ -218,11 +246,14 @@ export function ImportedCallsTable() {
                           {call.status || "Unknown"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3 text-sm text-muted-foreground max-w-[200px] truncate">
-                        {call.campaign || "-"}
+                      <TableCell className="py-3 text-sm text-muted-foreground">
+                        {call.call_source || "-"}
                       </TableCell>
                       <TableCell className="py-3 text-sm text-muted-foreground">
                         {call.call_type || "-"}
+                      </TableCell>
+                      <TableCell className="py-3 text-sm text-muted-foreground max-w-[180px] truncate">
+                        {call.campaign || "-"}
                       </TableCell>
                     </TableRow>
                   ))}
