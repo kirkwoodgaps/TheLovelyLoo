@@ -4,7 +4,7 @@ import { LeadsOverTimeChart } from "@/components/dashboard/leads-over-time-chart
 
 import { LeadSourcesChart } from "@/components/dashboard/lead-sources-chart"
 import { WeeklyActivity } from "@/components/dashboard/weekly-activity"
-import { CampaignTables } from "@/components/dashboard/campaign-tables"
+
 import { RecentLeadsTable } from "@/components/dashboard/recent-leads-table"
 import { DataImport } from "@/components/dashboard/data-import"
 import { ImportedCallsTable } from "@/components/dashboard/imported-calls-table"
@@ -204,9 +204,9 @@ export default async function DashboardPage({
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         <DashboardHeader sources={sources} />
 
-        {/* KPI Cards - Lifetime Totals and Selected Period */}
+        {/* KPI Cards - Lifetime Totals, Selected Period, and Campaign Performance */}
         <section className="mt-6" aria-label="Key performance indicators">
-          <KpiCards data={kpi} />
+          <KpiCards data={kpi} googleMetrics={googleMetrics} />
         </section>
 
         {/* Leads Charts Row */}
@@ -225,11 +225,6 @@ export default async function DashboardPage({
         {/* This Week */}
         <section className="mt-4" aria-label="This week activity">
           <WeeklyActivity data={data?.weeklyData ?? []} />
-        </section>
-
-        {/* Google Ads Campaign Performance */}
-        <section className="mt-4" aria-label="Campaign performance">
-          <CampaignTables googleMetrics={googleMetrics} />
         </section>
 
         {/* Matched Contacts Section */}

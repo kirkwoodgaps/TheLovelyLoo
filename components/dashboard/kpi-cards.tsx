@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -8,6 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Users,
   TrendingUp,
@@ -19,6 +27,24 @@ import {
   Target,
 } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
+
+interface CampaignMetrics {
+  spend: number
+  impressions: number
+  clicks: number
+  ctr: number
+  conversions: number
+  costPerConversion: number
+  campaigns: {
+    name: string
+    spend: number
+    impressions: number
+    clicks: number
+    conversions: number
+    ctr: number
+    phoneCalls?: number
+  }[]
+}
 
 interface KpiData {
   totalLeads: number
@@ -77,7 +103,7 @@ const rangeLabels: Record<string, string> = {
   "alltime": "All time",
 }
 
-export function KpiCards({ data }: { data: KpiData }) {
+export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics: CampaignMetrics | null }) {
   const router = useRouter()
   const pathname = usePathname()
   const currentRange = data.currentRange || "6months"
@@ -179,7 +205,7 @@ export function KpiCards({ data }: { data: KpiData }) {
         </div>
       </div>
 
-      {/* Dynamic Timeframe Section */}
+      {/* Dynamic Timeframe Section with Campaign Performance */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-muted-foreground">Selected Period</h3>
@@ -197,36 +223,108 @@ export function KpiCards({ data }: { data: KpiData }) {
             </SelectContent>
           </Select>
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-          {dynamicCards.map((card) => (
-            <Card key={card.label} className="border-border/60 shadow-sm bg-muted/30">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    {card.label}
-                  </span>
-                  <card.icon className="h-4 w-4 text-muted-foreground/60" />
-                </div>
-                <div className="mt-2">
-                  <span className="text-2xl font-bold tracking-tight text-foreground">
-                    {card.value}
-                  </span>
-                </div>
-                {card.showTrend && card.change !== undefined ? (
-                  <div className="mt-1">
-                    <TrendBadge value={card.change} />
-                    <span className="ml-1.5 text-xs text-muted-foreground">
-                      {card.sublabel}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* KPI Cards */}
+          <div className="flex flex-col gap-4">
+            {dynamicCards.map((card) => (
+              <Card key={card.label} className="border-border/60 shadow-sm bg-muted/30">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                      {card.label}
+                    </span>
+                    <card.icon className="h-4 w-4 text-muted-foreground/60" />
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-2xl font-bold tracking-tight text-foreground">
+                      {card.value}
                     </span>
                   </div>
-                ) : (
-                  <p className="mt-1 text-xs text-muted-foreground/70">
-                    {card.sublabel}
+                  {card.showTrend && card.change !== undefined ? (
+                    <div className="mt-1">
+                      <TrendBadge value={card.change} />
+                      <span className="ml-1.5 text-xs text-muted-foreground">
+                        {card.sublabel}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground/70">
+                      {card.sublabel}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Google Ads Campaign Performance */}
+          <div className="lg:col-span-2">
+            {googleMetrics ? (
+              <Card className="border-border/60 shadow-sm h-full">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base font-semibold">
+                    Google Ads Campaign Performance
+                  </CardTitle>
+                  <CardDescription>
+                    Detailed metrics by campaign (enabled campaigns only)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {/* Summary Row */}
+                  <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-center">
+                      <p className="text-xs font-medium text-muted-foreground uppercase">Total Spend</p>
+                      <p className="mt-1 text-lg font-bold text-foreground">${googleMetrics.spend.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-center">
+                      <p className="text-xs font-medium text-muted-foreground uppercase">Clicks</p>
+                      <p className="mt-1 text-lg font-bold text-foreground">{googleMetrics.clicks.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-center">
+                      <p className="text-xs font-medium text-muted-foreground uppercase">Conversions</p>
+                      <p className="mt-1 text-lg font-bold text-foreground">{Math.round(googleMetrics.conversions)}</p>
+                    </div>
+                    <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-center">
+                      <p className="text-xs font-medium text-muted-foreground uppercase">Cost/Conv.</p>
+                      <p className="mt-1 text-lg font-bold text-foreground">${googleMetrics.costPerConversion.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Campaign Table */}
+                  <div className="overflow-x-auto max-h-[200px] overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-border/60">
+                          <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Campaign</TableHead>
+                          <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Spend</TableHead>
+                          <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Clicks</TableHead>
+                          <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Conversions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {googleMetrics.campaigns.map((campaign) => (
+                          <TableRow key={campaign.name} className="border-border/40">
+                            <TableCell className="font-medium text-foreground">{campaign.name}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">${campaign.spend.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">{campaign.clicks.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-mono text-sm font-semibold">{Math.round(campaign.conversions)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-border/60 shadow-sm h-full flex items-center justify-center">
+                <CardContent className="py-12 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Google Ads data not available. Connect your Google Ads account or import CSV data.
                   </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>
