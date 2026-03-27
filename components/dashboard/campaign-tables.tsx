@@ -35,21 +35,15 @@ interface PlatformMetrics {
   }[]
 }
 
-function PlatformSummary({ metrics, showPhoneCalls }: { metrics: PlatformMetrics; showPhoneCalls?: boolean }) {
-  const totalPhoneCalls = metrics.campaigns.reduce((sum, c) => sum + (c.phoneCalls || 0), 0)
+function PlatformSummary({ metrics }: { metrics: PlatformMetrics }) {
   const items = [
     { label: "Total Spend", value: `$${metrics.spend.toLocaleString()}` },
-    { label: "Impressions", value: metrics.impressions.toLocaleString() },
     { label: "Clicks", value: metrics.clicks.toLocaleString() },
-    { label: "CTR", value: `${metrics.ctr}%` },
     { label: "Conversions", value: Math.round(metrics.conversions).toString() },
     { label: "Cost/Conv.", value: `$${metrics.costPerConversion.toFixed(2)}` },
   ]
-  if (showPhoneCalls && totalPhoneCalls > 0) {
-    items.push({ label: "Phone Calls", value: totalPhoneCalls.toLocaleString() })
-  }
   return (
-    <div className="mb-4 grid grid-cols-3 gap-4 lg:grid-cols-7">
+    <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
       {items.map((item) => (
         <div key={item.label} className="rounded-lg bg-secondary/50 p-3">
           <p className="text-xs font-medium text-muted-foreground">
@@ -66,10 +60,8 @@ function PlatformSummary({ metrics, showPhoneCalls }: { metrics: PlatformMetrics
 
 function CampaignTable({
   campaigns,
-  showPhoneCalls,
 }: {
   campaigns: PlatformMetrics["campaigns"]
-  showPhoneCalls?: boolean
 }) {
   return (
     <div className="overflow-x-auto">
@@ -83,22 +75,11 @@ function CampaignTable({
               Spend
             </TableHead>
             <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Impressions
-            </TableHead>
-            <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Clicks
-            </TableHead>
-            <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              CTR
             </TableHead>
             <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Conversions
             </TableHead>
-            {showPhoneCalls && (
-              <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Phone Calls
-              </TableHead>
-            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -111,22 +92,11 @@ function CampaignTable({
                 ${campaign.spend.toLocaleString()}
               </TableCell>
               <TableCell className="text-right font-mono text-sm">
-                {campaign.impressions.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right font-mono text-sm">
                 {campaign.clicks.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right font-mono text-sm">
-                {campaign.ctr}%
               </TableCell>
               <TableCell className="text-right font-mono text-sm font-semibold">
                 {Math.round(campaign.conversions)}
               </TableCell>
-              {showPhoneCalls && (
-                <TableCell className="text-right font-mono text-sm">
-                  {(campaign.phoneCalls || 0).toLocaleString()}
-                </TableCell>
-              )}
             </TableRow>
           ))}
         </TableBody>
@@ -185,8 +155,8 @@ export function CampaignTables({
       <CardContent className="pt-0">
         {googleMetrics ? (
           <>
-            <PlatformSummary metrics={googleMetrics} showPhoneCalls />
-            <CampaignTable campaigns={googleMetrics.campaigns} showPhoneCalls />
+            <PlatformSummary metrics={googleMetrics} />
+            <CampaignTable campaigns={googleMetrics.campaigns} />
           </>
         ) : (
           <PendingState />
