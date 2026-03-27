@@ -125,8 +125,6 @@ export async function POST(request: Request) {
 
     const headers = lines[headerIndex].split(delimiter).map(h => h.replace(/"/g, "").trim())
     
-    console.log("[v0] CSV Import - Headers found:", headers)
-    
     // Find column indices
     const dateIdx = findColumn(headers, "date")
     const campaignIdx = findColumn(headers, "campaign")
@@ -137,8 +135,6 @@ export async function POST(request: Request) {
     const ctrIdx = findColumn(headers, "ctr")
     const costPerConvIdx = findColumn(headers, "cost_per_conversion")
 
-    console.log("[v0] CSV Import - Column indices:", { dateIdx, campaignIdx, costIdx, clicksIdx, impressionsIdx, conversionsIdx })
-    
     if (dateIdx === -1) {
       return NextResponse.json({ 
         error: `Could not find Date column. Found headers: ${headers.join(", ")}` 
@@ -174,7 +170,7 @@ export async function POST(request: Request) {
       const campaignValue = campaignIdx !== -1 ? values[campaignIdx]?.replace(/"/g, "") : ""
       if (campaignValue?.toLowerCase().includes("total")) continue
 
-      const row = {
+      rows.push({
         date,
         campaign: campaignValue || "All Campaigns",
         cost: costIdx !== -1 ? parseNumber(values[costIdx]) : 0,
@@ -183,16 +179,7 @@ export async function POST(request: Request) {
         conversions: conversionsIdx !== -1 ? parseNumber(values[conversionsIdx]) : 0,
         ctr: ctrIdx !== -1 ? parseNumber(values[ctrIdx]) : 0,
         cost_per_conversion: costPerConvIdx !== -1 ? parseNumber(values[costPerConvIdx]) : 0,
-      }
-      
-      // Log first row for debugging
-      if (rows.length === 0) {
-        console.log("[v0] CSV Import - First row values array:", values)
-        console.log("[v0] CSV Import - First row parsed:", row)
-        console.log("[v0] CSV Import - Impressions raw value:", impressionsIdx !== -1 ? values[impressionsIdx] : "N/A")
-      }
-      
-      rows.push(row)
+      })
     }
 
     if (rows.length === 0) {

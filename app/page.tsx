@@ -202,11 +202,6 @@ export default async function DashboardPage({
           <CampaignTables googleMetrics={googleMetrics} />
         </section>
 
-        {/* Recent Leads */}
-        <section className="mt-4" aria-label="Recent leads">
-          <RecentLeadsTable leads={data?.recentLeads ?? []} />
-        </section>
-
         {/* Matched Contacts Section */}
         <section className="mt-8" aria-label="Matched contacts">
           <MatchedContactsTable />
@@ -224,6 +219,11 @@ export default async function DashboardPage({
           
           {/* Imported 17hats Contacts (shows only if data exists) */}
           <ImportedContactsTable />
+        </section>
+
+        {/* Recent Leads */}
+        <section className="mt-8" aria-label="Recent leads">
+          <RecentLeadsTable leads={data?.recentLeads ?? []} />
         </section>
 
         {/* Footer */}
