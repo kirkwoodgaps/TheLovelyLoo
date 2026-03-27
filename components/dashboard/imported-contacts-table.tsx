@@ -62,17 +62,13 @@ export function ImportedContactsTable() {
     setError(null)
     try {
       const response = await fetch("/api/import/17hats-contacts")
-      console.log("[v0] Contacts API response status:", response.status)
       const data = await response.json()
-      console.log("[v0] Contacts API data:", data)
       if (response.ok) {
         setContacts(data.contacts || [])
-        console.log("[v0] Set contacts count:", (data.contacts || []).length)
       } else {
         setError(data.error || "Failed to fetch contacts")
       }
     } catch (err) {
-      console.error("[v0] Contacts fetch error:", err)
       setError("Failed to fetch contacts")
     } finally {
       setIsLoading(false)

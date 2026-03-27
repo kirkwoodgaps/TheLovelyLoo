@@ -71,17 +71,13 @@ export function ImportedCallsTable() {
     setError(null)
     try {
       const response = await fetch("/api/import/google-ads-calls")
-      console.log("[v0] Calls API response status:", response.status)
       const data = await response.json()
-      console.log("[v0] Calls API data:", data)
       if (response.ok) {
         setCalls(data.calls || [])
-        console.log("[v0] Set calls count:", (data.calls || []).length)
       } else {
         setError(data.error || "Failed to fetch calls")
       }
     } catch (err) {
-      console.error("[v0] Calls fetch error:", err)
       setError("Failed to fetch calls")
     } finally {
       setIsLoading(false)
