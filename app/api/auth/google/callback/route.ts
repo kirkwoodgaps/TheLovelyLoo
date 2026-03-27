@@ -15,10 +15,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    const redirectUri = `${baseUrl}/api/auth/google/callback`
+    // Use configured redirect URI or fall back to request URL
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI 
+      || `${request.nextUrl.origin}/api/auth/google/callback`
 
     const tokens = await exchangeCodeForTokens(code, redirectUri)
 
