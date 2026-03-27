@@ -162,7 +162,7 @@ export function CampaignTables({
               Google Ads Campaign Performance
             </CardTitle>
             <CardDescription>
-              Detailed metrics by campaign
+              Detailed metrics by campaign (enabled campaigns only)
             </CardDescription>
           </div>
           {googleMetrics ? (
