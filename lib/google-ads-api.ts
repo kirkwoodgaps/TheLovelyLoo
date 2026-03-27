@@ -69,42 +69,57 @@ async function queryGoogleAds(
   const customerId = credentials.customerId.replace(/-/g, "")
   const managerCustomerId = credentials.managerCustomerId.replace(/-/g, "")
   
-  // Use v17 API with search endpoint (not searchStream)
-  const url = `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:search`
+  // Try multiple API versions in case one works
+  const apiVersions = ["v16", "v15", "v14"]
+  
+  for (const version of apiVersions) {
+    const url = `https://googleads.googleapis.com/${version}/customers/${customerId}/googleAds:search`
 
-  console.log("[v0] Google Ads API: Querying URL:", url)
-  console.log("[v0] Google Ads API: Using manager ID:", managerCustomerId || "(none)")
-  
-  const headers: Record<string, string> = {
-    "Authorization": `Bearer ${accessToken}`,
-    "developer-token": credentials.developerToken,
-    "Content-Type": "application/json",
-  }
-  
-  // Add manager customer ID header if provided (required for MCC accounts)
-  if (managerCustomerId) {
-    headers["login-customer-id"] = managerCustomerId
-  }
-  
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ query }),
-  })
+    console.log("[v0] Google Ads API: Trying", version, "- URL:", url)
+    console.log("[v0] Google Ads API: Using manager ID:", managerCustomerId || "(none)")
+    
+    const headers: Record<string, string> = {
+      "Authorization": `Bearer ${accessToken}`,
+      "developer-token": credentials.developerToken,
+      "Content-Type": "application/json",
+    }
+    
+    // Add manager customer ID header if provided (required for MCC accounts)
+    if (managerCustomerId) {
+      headers["login-customer-id"] = managerCustomerId
+    }
+    
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ query }),
+    })
 
-  console.log("[v0] Google Ads API: Response status:", response.status)
-  
-  if (!response.ok) {
+    console.log("[v0] Google Ads API:", version, "Response status:", response.status)
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log("[v0] Google Ads API: Success with", version, "- keys:", Object.keys(data))
+      return data.results || []
+    }
+    
+    // If 404, try next version
+    if (response.status === 404) {
+      console.log("[v0] Google Ads API:", version, "not found, trying next...")
+      continue
+    }
+    
+    // For other errors, get details
     const error = await response.text()
-    console.log("[v0] Google Ads API: Error response:", error.substring(0, 500))
-    throw new Error(`Google Ads API error: ${error}`)
+    console.log("[v0] Google Ads API:", version, "Error:", error.substring(0, 500))
+    
+    // If it's an auth/permission error, don't try other versions
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(`Google Ads API auth error: ${error}`)
+    }
   }
-
-  const data = await response.json()
-  console.log("[v0] Google Ads API: Response data keys:", Object.keys(data))
   
-  // search returns results directly
-  return data.results || []
+  throw new Error("All Google Ads API versions failed")
 }
 
 export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
