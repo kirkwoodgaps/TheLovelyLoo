@@ -284,22 +284,22 @@ export function DataImport() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="google-ads-metrics" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="google-ads-metrics" className="gap-2">
+          <TabsList className="flex !w-full mb-6 h-auto p-1">
+            <TabsTrigger value="google-ads-metrics" className="flex-1 gap-2">
               <TrendingUp className="h-4 w-4" />
-              Google Ads Metrics
+              <span className="hidden sm:inline">Google Ads</span> Metrics
             </TabsTrigger>
-            <TabsTrigger value="google-ads" className="gap-2">
+            <TabsTrigger value="google-ads" className="flex-1 gap-2">
               <Phone className="h-4 w-4" />
-              Google Ads Calls
+              <span className="hidden sm:inline">Google Ads</span> Calls
             </TabsTrigger>
-            <TabsTrigger value="17hats" className="gap-2">
+            <TabsTrigger value="17hats" className="flex-1 gap-2">
               <Users className="h-4 w-4" />
-              17hats Contacts
+              17hats <span className="hidden sm:inline">Contacts</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="google-ads-metrics" className="mt-0">
+          <TabsContent value="google-ads-metrics" className="mt-4">
             <ImportDropzone
               title="Google Ads Campaign Metrics"
               description="Export from Google Ads: Reports > Campaigns > Download CSV. Include Date, Campaign, Cost, Clicks, Impressions, and Conversions columns."
@@ -311,7 +311,7 @@ export function DataImport() {
             />
           </TabsContent>
 
-          <TabsContent value="google-ads" className="mt-0">
+          <TabsContent value="google-ads" className="mt-4">
             <ImportDropzone
               title="Google Ads Call Details"
               description="Export from Google Ads: Reports > Call Details > Download CSV. Includes phone numbers, duration, campaign, and call status."
@@ -323,7 +323,7 @@ export function DataImport() {
             />
           </TabsContent>
 
-          <TabsContent value="17hats" className="mt-0">
+          <TabsContent value="17hats" className="mt-4">
             <ImportDropzone
               title="17hats Contacts"
               description="Export from 17hats: Contacts > Export to CSV. Includes name, email, phone, lead source, and contact details."
