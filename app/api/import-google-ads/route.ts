@@ -26,8 +26,14 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
 
 function findColumn(headers: string[], fieldName: string): number {
   const variations = COLUMN_MAPPINGS[fieldName] || [fieldName]
+  // First try exact match
   for (const variation of variations) {
     const index = headers.findIndex(h => h.toLowerCase().trim() === variation.toLowerCase())
+    if (index !== -1) return index
+  }
+  // Then try partial/contains match for columns like "Local reach (impressions)"
+  for (const variation of variations) {
+    const index = headers.findIndex(h => h.toLowerCase().trim().includes(variation.toLowerCase()))
     if (index !== -1) return index
   }
   return -1

@@ -113,17 +113,10 @@ export default async function DashboardPage({
   const rangeGoogleImpressions = filteredDaily.reduce((s, d) => s + d.impressions, 0)
   const rangeGoogleConversions = filteredDaily.reduce((s, d) => s + d.conversions, 0)
 
-  // ── Filter Gravity Forms leads to range ──────────────────
-  // monthlyData uses YYYY-MM format
-  const filteredMonthlyLeads = (data?.monthlyData ?? []).filter((m) => {
-    const d = new Date(m.month + "-01")
-    return d >= cutoffDate
-  })
-  
-  console.log("[v0] monthlyData:", data?.monthlyData)
-  console.log("[v0] filteredMonthlyLeads:", filteredMonthlyLeads)
-  console.log("[v0] cutoffDate for leads:", cutoffDate)
-  const rangeLeadTotal = filteredMonthlyLeads.reduce((s, m) => s + m.total, 0)
+  // ── Gravity Forms leads - always show all available months for the chart
+  // The date range filter applies to Google Ads data, not the leads over time chart
+  const monthlyLeadsData = data?.monthlyData ?? []
+  const rangeLeadTotal = monthlyLeadsData.reduce((s, m) => s + m.total, 0)
 
   // current month vs previous month (always uses current/prev regardless of range)
   const leadsChange =
@@ -170,7 +163,7 @@ export default async function DashboardPage({
       }
     : null
 
-  // ── Data source statuses ─────────────────────────────────
+  // ── Data source statuses ────────────────���────────────────
   const sources = [
     { name: "Gravity Forms", status: data ? "live" as const : "error" as const },
     { name: "Google Ads", status: googleAds?.hasData ? "live" as const : "pending" as const },
@@ -192,7 +185,7 @@ export default async function DashboardPage({
           aria-label="Charts"
         >
           <div className="lg:col-span-2">
-            <LeadsOverTimeChart data={filteredMonthlyLeads} />
+            <LeadsOverTimeChart data={monthlyLeadsData} />
           </div>
           <div>
             <LeadSourcesChart data={[...(data?.formBreakdown ?? [])].sort((a, b) => b.value - a.value)} />
