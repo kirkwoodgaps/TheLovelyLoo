@@ -13,6 +13,7 @@ import { MatchedContactsTable } from "@/components/dashboard/matched-contacts-ta
 import { getDashboardData } from "@/lib/gravity-forms"
 import { fetchGoogleAdsSummary } from "@/lib/google-ads"
 import { fetchGoogleAdsData } from "@/lib/google-ads-api"
+import { fetchImportedGoogleAdsMetrics } from "@/lib/google-ads-imported"
 
 const RANGE_CONFIG: Record<string, { days: number; label: string }> = {
   "7days": { days: 7, label: "Last 7 days" },
@@ -34,18 +35,22 @@ export default async function DashboardPage({
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - cutoffDays)
 
-  const [gfResult, googleAdsSheetResult, googleAdsApiResult] = await Promise.allSettled([
+  const [gfResult, googleAdsSheetResult, googleAdsApiResult, googleAdsImportedResult] = await Promise.allSettled([
     getDashboardData(),
     fetchGoogleAdsSummary(),
     fetchGoogleAdsData(), // Direct API (preferred if credentials configured)
+    fetchImportedGoogleAdsMetrics(), // CSV imported data (second preference)
   ])
 
   const data = gfResult.status === "fulfilled" ? gfResult.value : null
   const googleAdsFromSheet = googleAdsSheetResult.status === "fulfilled" ? googleAdsSheetResult.value : null
   const googleAdsFromApi = googleAdsApiResult.status === "fulfilled" ? googleAdsApiResult.value : null
+  const googleAdsFromImport = googleAdsImportedResult.status === "fulfilled" ? googleAdsImportedResult.value : null
   
-  // Prefer direct API data if available, fallback to spreadsheet
+  // Priority: Direct API > Imported CSV > Spreadsheet
   const useDirectApi = googleAdsFromApi?.hasData
+  const useImported = !useDirectApi && googleAdsFromImport?.hasData
+  
   const googleAds = useDirectApi ? {
     hasData: true,
     totalSpend: googleAdsFromApi.summary.totalSpend,
@@ -76,7 +81,7 @@ export default async function DashboardPage({
       phoneCalls: 0,
     })),
     callRecords: [],
-  } : googleAdsFromSheet
+  } : useImported ? googleAdsFromImport : googleAdsFromSheet
 
   // If both sources failed, show error
   if (!data && !googleAds) {

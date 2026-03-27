@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Upload, FileSpreadsheet, Phone, Users, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Upload, FileSpreadsheet, Phone, Users, CheckCircle2, AlertCircle, Loader2, TrendingUp } from "lucide-react"
 
 interface ImportResult {
   success: boolean
@@ -143,8 +143,10 @@ function ImportDropzone({
 
 export function DataImport() {
   const [googleAdsLoading, setGoogleAdsLoading] = useState(false)
+  const [googleAdsMetricsLoading, setGoogleAdsMetricsLoading] = useState(false)
   const [hatsLoading, setHatsLoading] = useState(false)
   const [googleAdsResult, setGoogleAdsResult] = useState<ImportResult | null>(null)
+  const [googleAdsMetricsResult, setGoogleAdsMetricsResult] = useState<ImportResult | null>(null)
   const [hatsResult, setHatsResult] = useState<ImportResult | null>(null)
 
   const handleGoogleAdsImport = async (file: File) => {
@@ -183,6 +185,43 @@ export function DataImport() {
       })
     } finally {
       setGoogleAdsLoading(false)
+    }
+  }
+
+  const handleGoogleAdsMetricsImport = async (file: File) => {
+    setGoogleAdsMetricsLoading(true)
+    setGoogleAdsMetricsResult(null)
+
+    try {
+      const text = await file.text()
+
+      const response = await fetch("/api/import-google-ads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csvData: text }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setGoogleAdsMetricsResult({
+          success: true,
+          imported: data.imported,
+          message: `Imported ${data.imported} rows (${data.dateRange.from} to ${data.dateRange.to})`,
+        })
+      } else {
+        setGoogleAdsMetricsResult({
+          success: false,
+          error: data.error || "Failed to import file",
+        })
+      }
+    } catch (error) {
+      setGoogleAdsMetricsResult({
+        success: false,
+        error: `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`,
+      })
+    } finally {
+      setGoogleAdsMetricsLoading(false)
     }
   }
 
@@ -244,8 +283,12 @@ export function DataImport() {
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="google-ads" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+        <Tabs defaultValue="google-ads-metrics" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="google-ads-metrics" className="gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Google Ads Metrics
+            </TabsTrigger>
             <TabsTrigger value="google-ads" className="gap-2">
               <Phone className="h-4 w-4" />
               Google Ads Calls
@@ -255,6 +298,18 @@ export function DataImport() {
               17hats Contacts
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="google-ads-metrics" className="mt-0">
+            <ImportDropzone
+              title="Google Ads Campaign Metrics"
+              description="Export from Google Ads: Reports > Campaigns > Download CSV. Include Date, Campaign, Cost, Clicks, Impressions, and Conversions columns."
+              icon={TrendingUp}
+              acceptedFormats="CSV format only"
+              onFileSelect={handleGoogleAdsMetricsImport}
+              isLoading={googleAdsMetricsLoading}
+              result={googleAdsMetricsResult}
+            />
+          </TabsContent>
 
           <TabsContent value="google-ads" className="mt-0">
             <ImportDropzone
