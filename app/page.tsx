@@ -1,19 +1,22 @@
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { KpiCards } from "@/components/dashboard/kpi-cards"
 import { LeadsOverTimeChart } from "@/components/dashboard/leads-over-time-chart"
-
 import { LeadSourcesChart } from "@/components/dashboard/lead-sources-chart"
 import { WeeklyActivity } from "@/components/dashboard/weekly-activity"
-
 import { RecentLeadsTable } from "@/components/dashboard/recent-leads-table"
 import { DataImport } from "@/components/dashboard/data-import"
 import { ImportedCallsTable } from "@/components/dashboard/imported-calls-table"
 import { ImportedContactsTable } from "@/components/dashboard/imported-contacts-table"
 import { MatchedContactsTable } from "@/components/dashboard/matched-contacts-table"
+import { SearchConsoleCard } from "@/components/dashboard/search-console-card"
+import { GA4Card } from "@/components/dashboard/ga4-card"
 import { getDashboardData } from "@/lib/gravity-forms"
 import { fetchGoogleAdsSummary } from "@/lib/google-ads"
 import { fetchGoogleAdsData } from "@/lib/google-ads-api"
 import { fetchImportedGoogleAdsMetrics } from "@/lib/google-ads-imported"
+import { fetchSearchConsoleData } from "@/lib/search-console"
+import { fetchGA4Data } from "@/lib/ga4"
+import { isConnected } from "@/lib/google-oauth"
 
 const RANGE_CONFIG: Record<string, { days: number; label: string }> = {
   "7days": { days: 7, label: "Last 7 days" },
@@ -35,17 +38,37 @@ export default async function DashboardPage({
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - cutoffDays)
 
-  const [gfResult, googleAdsSheetResult, googleAdsApiResult, googleAdsImportedResult] = await Promise.allSettled([
+  // Format dates for API calls
+  const startDate = cutoffDate.toISOString().split("T")[0]
+  const endDate = new Date().toISOString().split("T")[0]
+
+  const [
+    gfResult, 
+    googleAdsSheetResult, 
+    googleAdsApiResult, 
+    googleAdsImportedResult,
+    searchConsoleResult,
+    ga4Result,
+    googleConnectedResult,
+  ] = await Promise.allSettled([
     getDashboardData(),
     fetchGoogleAdsSummary(),
     fetchGoogleAdsData(), // Direct API (preferred if credentials configured)
     fetchImportedGoogleAdsMetrics(), // CSV imported data (second preference)
+    // Search Console - using the site URL (you may need to configure this)
+    fetchSearchConsoleData("https://thelovelyloo.com/", startDate, endDate),
+    // GA4 - using property ID (you may need to configure this)
+    fetchGA4Data(process.env.GA4_PROPERTY_ID || "", startDate, endDate),
+    isConnected("google_analytics"),
   ])
 
   const data = gfResult.status === "fulfilled" ? gfResult.value : null
   const googleAdsFromSheet = googleAdsSheetResult.status === "fulfilled" ? googleAdsSheetResult.value : null
   const googleAdsFromApi = googleAdsApiResult.status === "fulfilled" ? googleAdsApiResult.value : null
   const googleAdsFromImport = googleAdsImportedResult.status === "fulfilled" ? googleAdsImportedResult.value : null
+  const searchConsoleData = searchConsoleResult.status === "fulfilled" ? searchConsoleResult.value : null
+  const ga4Data = ga4Result.status === "fulfilled" ? ga4Result.value : null
+  const googleConnected = googleConnectedResult.status === "fulfilled" ? googleConnectedResult.value : false
   
   // Priority: Direct API > Imported CSV > Spreadsheet
   const useDirectApi = googleAdsFromApi?.hasData
@@ -225,6 +248,12 @@ export default async function DashboardPage({
         {/* This Week */}
         <section className="mt-4" aria-label="This week activity">
           <WeeklyActivity data={data?.weeklyData ?? []} />
+        </section>
+
+        {/* Search Console & GA4 Row */}
+        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Google Analytics">
+          <SearchConsoleCard data={searchConsoleData} isConnected={googleConnected} />
+          <GA4Card data={ga4Data} isConnected={googleConnected} />
         </section>
 
         {/* Matched Contacts Section */}
