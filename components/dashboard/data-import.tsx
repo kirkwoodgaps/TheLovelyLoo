@@ -167,18 +167,19 @@ export function DataImport() {
           success: true,
           imported: data.imported,
           skipped: data.skipped,
-          message: data.message,
+          message: data.message + (data.failed > 0 ? ` (${data.failed} failed - check format)` : ""),
         })
       } else {
         setGoogleAdsResult({
           success: false,
-          error: data.error || "Failed to import file",
+          error: data.details ? `${data.error}: ${data.details}` : (data.error || "Failed to import file"),
         })
       }
     } catch (error) {
+      console.error("[v0] Google Ads upload error:", error)
       setGoogleAdsResult({
         success: false,
-        error: "Failed to upload file. Please try again.",
+        error: `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`,
       })
     } finally {
       setGoogleAdsLoading(false)
@@ -210,13 +211,14 @@ export function DataImport() {
       } else {
         setHatsResult({
           success: false,
-          error: data.error || "Failed to import file",
+          error: data.details ? `${data.error}: ${data.details}` : (data.error || "Failed to import file"),
         })
       }
     } catch (error) {
+      console.error("[v0] 17hats upload error:", error)
       setHatsResult({
         success: false,
-        error: "Failed to upload file. Please try again.",
+        error: `Failed to upload file: ${error instanceof Error ? error.message : String(error)}`,
       })
     } finally {
       setHatsLoading(false)

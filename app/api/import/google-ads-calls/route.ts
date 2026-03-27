@@ -138,6 +138,8 @@ export async function POST(request: NextRequest) {
     // Insert records one by one, skipping duplicates
     let imported = 0
     let skipped = 0
+    let failed = 0
+    const errors: string[] = []
 
     for (const record of records) {
       const { error } = await supabase
@@ -149,7 +151,11 @@ export async function POST(request: NextRequest) {
         if (error.code === "23505") {
           skipped++
         } else {
-          console.error("Insert error for record:", error)
+          failed++
+          if (errors.length < 5) {
+            errors.push(`${error.code}: ${error.message}`)
+          }
+          console.error("[v0] Insert error for record:", error, "Record:", record)
         }
       } else {
         imported++
@@ -160,8 +166,10 @@ export async function POST(request: NextRequest) {
       success: true,
       imported,
       skipped,
+      failed,
       total: records.length,
-      message: `Imported ${imported} new call records${skipped > 0 ? `, skipped ${skipped} duplicates` : ""}`,
+      errors: errors.length > 0 ? errors : undefined,
+      message: `Imported ${imported} new call records${skipped > 0 ? `, skipped ${skipped} duplicates` : ""}${failed > 0 ? `, ${failed} failed` : ""}`,
     })
   } catch (error) {
     console.error("Import error:", error)

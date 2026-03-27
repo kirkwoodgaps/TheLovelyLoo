@@ -75,12 +75,16 @@ function parseDate(dateStr: string): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] 17hats import: Starting...")
     const formData = await request.formData()
     const file = formData.get("file") as File
 
     if (!file) {
+      console.log("[v0] 17hats import: No file provided")
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
+    
+    console.log("[v0] 17hats import: File received:", file.name, file.size, "bytes")
 
     const csvText = await file.text()
     const rows = parseCSV(csvText)
@@ -128,12 +132,14 @@ export async function POST(request: NextRequest) {
     const validRecords = records.filter((r) => r.email || r.phone)
 
     if (validRecords.length === 0) {
+      console.log("[v0] 17hats import: No valid records (need email or phone)")
       return NextResponse.json(
         { error: "No valid records found (need email or phone)" },
         { status: 400 }
       )
     }
 
+    console.log("[v0] 17hats import: Inserting", validRecords.length, "records")
     const supabase = await createClient()
 
     const { data, error } = await supabase
@@ -142,12 +148,14 @@ export async function POST(request: NextRequest) {
       .select()
 
     if (error) {
-      console.error("Import error:", error)
+      console.error("[v0] 17hats import error:", error)
       return NextResponse.json(
         { error: "Failed to import records", details: error.message },
         { status: 500 }
       )
     }
+    
+    console.log("[v0] 17hats import: Success, imported", data?.length)
 
     return NextResponse.json({
       success: true,
