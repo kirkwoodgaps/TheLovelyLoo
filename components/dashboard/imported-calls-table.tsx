@@ -18,14 +18,15 @@ interface CallRecord {
   id: string
   start_time: string
   duration_seconds: number
-  caller_country_code: string
-  caller_area_code: string
   caller_phone_number: string
   recording_url: string
   status: string
   call_source: string
   call_type: string
   campaign: string
+  caller_name: string | null
+  inquiry_topic: string | null
+  inquiry_notes: string | null
 }
 
 function formatDuration(seconds: number): string {
@@ -175,35 +176,29 @@ export function ImportedCallsTable() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[150px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="w-[140px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Start Time
                     </TableHead>
-                    <TableHead className="w-[80px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="w-[70px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Duration
                     </TableHead>
-                    <TableHead className="w-[60px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Country
-                    </TableHead>
-                    <TableHead className="w-[70px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Area Code
-                    </TableHead>
-                    <TableHead className="w-[140px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="w-[130px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Phone Number
                     </TableHead>
-                    <TableHead className="w-[80px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Recording
+                    <TableHead className="w-[120px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Name
                     </TableHead>
-                    <TableHead className="w-[90px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="w-[80px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Status
                     </TableHead>
-                    <TableHead className="w-[100px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Call Source
+                    <TableHead className="w-[120px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Campaign
                     </TableHead>
                     <TableHead className="w-[120px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Call Type
+                      Inquiry Topic
                     </TableHead>
-                    <TableHead className="min-w-[180px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Campaign
+                    <TableHead className="min-w-[200px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Inquiry Notes
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -216,23 +211,11 @@ export function ImportedCallsTable() {
                       <TableCell className="py-3 font-mono text-sm text-muted-foreground">
                         {formatDuration(call.duration_seconds)}
                       </TableCell>
-                      <TableCell className="py-3 text-sm text-muted-foreground text-center">
-                        {call.caller_country_code || "-"}
-                      </TableCell>
-                      <TableCell className="py-3 font-mono text-sm text-muted-foreground">
-                        {call.caller_area_code || "-"}
-                      </TableCell>
                       <TableCell className="py-3 font-mono text-sm font-medium text-foreground">
                         {formatPhoneNumber(call.caller_phone_number)}
                       </TableCell>
-                      <TableCell className="py-3 text-sm text-muted-foreground">
-                        {call.recording_url ? (
-                          <a href={call.recording_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            View
-                          </a>
-                        ) : (
-                          "-"
-                        )}
+                      <TableCell className="py-3 text-sm text-foreground">
+                        {call.caller_name || "-"}
                       </TableCell>
                       <TableCell className="py-3">
                         <Badge
@@ -246,14 +229,14 @@ export function ImportedCallsTable() {
                           {call.status || "Unknown"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3 text-sm text-muted-foreground">
-                        {call.call_source || "-"}
-                      </TableCell>
-                      <TableCell className="py-3 text-sm text-muted-foreground">
-                        {call.call_type || "-"}
-                      </TableCell>
-                      <TableCell className="py-3 text-sm text-muted-foreground max-w-[180px] truncate">
+                      <TableCell className="py-3 text-sm text-muted-foreground max-w-[120px] truncate">
                         {call.campaign || "-"}
+                      </TableCell>
+                      <TableCell className="py-3 text-sm text-muted-foreground">
+                        {call.inquiry_topic || "-"}
+                      </TableCell>
+                      <TableCell className="py-3 text-sm text-muted-foreground max-w-[200px] truncate" title={call.inquiry_notes || ""}>
+                        {call.inquiry_notes || "-"}
                       </TableCell>
                     </TableRow>
                   ))}
