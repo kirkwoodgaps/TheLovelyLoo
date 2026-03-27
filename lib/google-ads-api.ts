@@ -99,6 +99,8 @@ async function queryGoogleAds(
 }
 
 export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
+  console.log("[v0] Google Ads API: Starting fetch...")
+  
   const credentials: GoogleAdsCredentials = {
     clientId: process.env.GOOGLE_ADS_CLIENT_ID || "",
     clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET || "",
@@ -107,15 +109,25 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
     refreshToken: process.env.GOOGLE_ADS_REFRESH_TOKEN || "",
   }
 
+  console.log("[v0] Google Ads API: Credentials present?", {
+    clientId: !!credentials.clientId,
+    clientSecret: !!credentials.clientSecret,
+    developerToken: !!credentials.developerToken,
+    customerId: !!credentials.customerId,
+    refreshToken: !!credentials.refreshToken,
+  })
+
   // Check if all credentials are configured
   if (!credentials.clientId || !credentials.clientSecret || !credentials.developerToken || 
       !credentials.customerId || !credentials.refreshToken) {
-    console.log("[Google Ads API] Missing credentials, skipping API fetch")
+    console.log("[v0] Google Ads API: Missing credentials, skipping API fetch")
     return null
   }
 
   try {
+    console.log("[v0] Google Ads API: Getting access token...")
     const accessToken = await getAccessToken(credentials)
+    console.log("[v0] Google Ads API: Got access token")
 
     // Query for campaign metrics (last 90 days)
     const campaignQuery = `
@@ -142,10 +154,12 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
       WHERE segments.date DURING LAST_90_DAYS
     `
 
+    console.log("[v0] Google Ads API: Querying campaigns and daily data...")
     const [campaignResults, dailyResults] = await Promise.all([
       queryGoogleAds(credentials, accessToken, campaignQuery),
       queryGoogleAds(credentials, accessToken, dailyQuery),
     ])
+    console.log("[v0] Google Ads API: Got results - campaigns:", campaignResults.length, "daily:", dailyResults.length)
 
     // Aggregate campaign metrics
     const campaignMap = new Map<string, CampaignMetrics>()
@@ -203,7 +217,7 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
       daily,
     }
   } catch (error) {
-    console.error("[Google Ads API] Error fetching data:", error)
+    console.error("[v0] Google Ads API Error:", error instanceof Error ? error.message : String(error))
     return null
   }
 }
