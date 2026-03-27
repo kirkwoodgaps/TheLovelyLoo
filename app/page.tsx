@@ -8,13 +8,11 @@ import { DataImport } from "@/components/dashboard/data-import"
 import { ImportedCallsTable } from "@/components/dashboard/imported-calls-table"
 import { ImportedContactsTable } from "@/components/dashboard/imported-contacts-table"
 import { MatchedContactsTable } from "@/components/dashboard/matched-contacts-table"
-import { SearchConsoleCard } from "@/components/dashboard/search-console-card"
 import { GA4Card } from "@/components/dashboard/ga4-card"
 import { getDashboardData } from "@/lib/gravity-forms"
 import { fetchGoogleAdsSummary } from "@/lib/google-ads"
 import { fetchGoogleAdsData } from "@/lib/google-ads-api"
 import { fetchImportedGoogleAdsMetrics } from "@/lib/google-ads-imported"
-import { fetchSearchConsoleData } from "@/lib/search-console"
 import { fetchGA4Data } from "@/lib/ga4"
 import { isConnected } from "@/lib/google-oauth"
 
@@ -47,7 +45,6 @@ export default async function DashboardPage({
     googleAdsSheetResult, 
     googleAdsApiResult, 
     googleAdsImportedResult,
-    searchConsoleResult,
     ga4Result,
     googleConnectedResult,
   ] = await Promise.allSettled([
@@ -55,9 +52,7 @@ export default async function DashboardPage({
     fetchGoogleAdsSummary(),
     fetchGoogleAdsData(), // Direct API (preferred if credentials configured)
     fetchImportedGoogleAdsMetrics(), // CSV imported data (second preference)
-    // Search Console - using the site URL (you may need to configure this)
-    fetchSearchConsoleData("https://thelovelyloo.com/", startDate, endDate),
-    // GA4 - using property ID (you may need to configure this)
+    // GA4 - using property ID
     fetchGA4Data(process.env.GA4_PROPERTY_ID || "", startDate, endDate),
     isConnected("google_analytics"),
   ])
@@ -66,7 +61,6 @@ export default async function DashboardPage({
   const googleAdsFromSheet = googleAdsSheetResult.status === "fulfilled" ? googleAdsSheetResult.value : null
   const googleAdsFromApi = googleAdsApiResult.status === "fulfilled" ? googleAdsApiResult.value : null
   const googleAdsFromImport = googleAdsImportedResult.status === "fulfilled" ? googleAdsImportedResult.value : null
-  const searchConsoleData = searchConsoleResult.status === "fulfilled" ? searchConsoleResult.value : null
   const ga4Data = ga4Result.status === "fulfilled" ? ga4Result.value : null
   const googleConnected = googleConnectedResult.status === "fulfilled" ? googleConnectedResult.value : false
   
@@ -250,9 +244,8 @@ export default async function DashboardPage({
           <WeeklyActivity data={data?.weeklyData ?? []} />
         </section>
 
-        {/* Search Console & GA4 Row */}
-        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Google Analytics">
-          <SearchConsoleCard data={searchConsoleData} isConnected={googleConnected} />
+        {/* GA4 Analytics */}
+        <section className="mt-6" aria-label="Google Analytics">
           <GA4Card data={ga4Data} isConnected={googleConnected} />
         </section>
 
