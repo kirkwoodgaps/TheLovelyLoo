@@ -127,11 +127,15 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
   // Check if all credentials are configured
   if (!credentials.clientId || !credentials.clientSecret || !credentials.developerToken || 
       !credentials.customerId || !credentials.refreshToken) {
+    console.log("[v0] Google Ads API: Missing credentials")
     return null
   }
 
+  console.log("[v0] Google Ads API: Attempting to fetch data with refresh token starting with:", credentials.refreshToken.substring(0, 20) + "...")
+
   try {
     const accessToken = await getAccessToken(credentials)
+    console.log("[v0] Google Ads API: Successfully got access token")
 
     // Query for campaign metrics (last 90 days)
     const campaignQuery = `
@@ -218,7 +222,8 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
       campaigns,
       daily,
     }
-  } catch {
+  } catch (error) {
+    console.log("[v0] Google Ads API: Error fetching data:", error)
     return null
   }
 }
