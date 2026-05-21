@@ -149,7 +149,7 @@ export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics
     sublabel: string
   }[] = [
     {
-      label: "This Month",
+      label: "Website Leads",
       value: formatNumber(data.currentMonthLeads),
       icon: TrendingUp,
       showTrend: true,
