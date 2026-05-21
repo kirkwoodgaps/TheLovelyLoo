@@ -330,9 +330,11 @@ export async function getDashboardData(): Promise<DashboardData> {
     value: f.totalEntries,
   }))
 
-  // Current vs previous month counts
+  // Current vs previous month counts (compare same number of days for fairness)
   const currentMonth = now.getMonth()
   const currentYear = now.getFullYear()
+  const currentDayOfMonth = now.getDate()
+  
   const currentMonthLeads = rangeEntries.filter((e) => {
     const d = new Date(e.dateCreated)
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear
@@ -340,9 +342,12 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
   const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear
+  
+  // Count only leads from the first N days of the previous month (where N = current day of month)
+  // This gives a fair apples-to-apples comparison
   const previousMonthLeads = rangeEntries.filter((e) => {
     const d = new Date(e.dateCreated)
-    return d.getMonth() === prevMonth && d.getFullYear() === prevYear
+    return d.getMonth() === prevMonth && d.getFullYear() === prevYear && d.getDate() <= currentDayOfMonth
   }).length
 
   return {
