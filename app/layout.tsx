@@ -8,7 +8,7 @@ const _dmMono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: 
 
 export const metadata: Metadata = {
   title: 'The Lovely Loo - Marketing Dashboard',
-  description: 'Leads & Ad Spend Dashboard for The Lovely Loo',
+  description: 'Leads and Analytics Dashboard for The Lovely Loo',
   generator: 'v0.app',
   icons: {
     icon: [
