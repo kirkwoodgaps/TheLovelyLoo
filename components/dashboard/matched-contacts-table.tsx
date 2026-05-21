@@ -56,6 +56,22 @@ interface MatchedContact {
   matchSources: string[]
 }
 
+function getMostRecentDate(match: MatchedContact): string | null {
+  const dates: Date[] = []
+  
+  for (const call of match.matchedCalls) {
+    if (call.start_time) dates.push(new Date(call.start_time))
+  }
+  for (const lead of match.matchedLeads) {
+    if (lead.dateCreated) dates.push(new Date(lead.dateCreated))
+  }
+  
+  if (dates.length === 0) return null
+  
+  const mostRecent = dates.reduce((a, b) => (a > b ? a : b))
+  return mostRecent.toISOString()
+}
+
 interface MatchData {
   matches: MatchedContact[]
   totalContacts: number
@@ -232,6 +248,9 @@ export function MatchedContactsTable() {
                 <TableHead className="w-[150px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Match Sources
                 </TableHead>
+                <TableHead className="w-[100px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Date
+                </TableHead>
                 <TableHead className="w-[80px] text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">
                   Matches
                 </TableHead>
@@ -281,6 +300,9 @@ export function MatchedContactsTable() {
                         ))}
                       </div>
                     </TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground">
+                      {getMostRecentDate(match) ? formatDate(getMostRecentDate(match)!) : "-"}
+                    </TableCell>
                     <TableCell className="py-3 text-center">
                       <Badge variant="secondary" className="text-xs">
                         {match.matchedCalls.length + match.matchedLeads.length}
@@ -289,7 +311,7 @@ export function MatchedContactsTable() {
                   </TableRow>
                   {expandedRows.has(match.contact.id) && (
                     <TableRow key={`${match.contact.id}-details`} className="bg-muted/30">
-                      <TableCell colSpan={6} className="py-4">
+                      <TableCell colSpan={7} className="py-4">
                         <div className="space-y-4 pl-4">
                           {match.matchedCalls.length > 0 && (
                             <div>
