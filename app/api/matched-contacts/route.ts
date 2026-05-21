@@ -21,7 +21,7 @@ export async function GET() {
     
     // Fetch all data sources in parallel
     const [contactsResult, callsResult, allLeads] = await Promise.all([
-      supabase.from("contacts_17hats").select("id, first_name, last_name, email, phone, company, lead_source, status"),
+      supabase.from("contacts").select("id, first_name, last_name, email, phone, company, lead_source, status"),
       supabase.from("google_ads_calls").select("id, start_time, caller_phone_number, caller_name, campaign, status"),
       getAllLeadsForMatching(), // Get ALL leads for complete matching
     ])
