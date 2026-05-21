@@ -228,6 +228,7 @@ export interface DashboardData {
   forms: { id: string; title: string; totalEntries: number }[]
   totalLeads: number
   recentLeads: NormalizedEntry[]
+  rangeEntries: NormalizedEntry[]
   monthlyData: {
     month: string
     year: number
@@ -354,6 +355,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     forms,
     totalLeads,
     recentLeads,
+    rangeEntries,
     monthlyData,
     weeklyData,
     formBreakdown,

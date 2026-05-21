@@ -145,15 +145,15 @@ export default async function DashboardPage({
   const rangeGoogleImpressions = filteredDaily.reduce((s, d) => s + d.impressions, 0)
   const rangeGoogleConversions = filteredDaily.reduce((s, d) => s + d.conversions, 0)
 
-  // ── Gravity Forms leads - filter by date range
+  // ── Gravity Forms leads - filter by date range using raw entries
   const monthlyLeadsData = data?.monthlyData ?? []
+  const allEntries = data?.rangeEntries ?? []
   
-  // Filter leads to selected date range
-  const filteredMonthlyLeads = monthlyLeadsData.filter((m) => {
-    const monthDate = new Date(m.month + "-01")
-    return monthDate >= cutoffDate
-  })
-  const rangeLeadTotal = filteredMonthlyLeads.reduce((s, m) => s + m.total, 0)
+  // Filter raw entries to selected date range (more accurate than monthly aggregates)
+  const rangeLeadTotal = allEntries.filter((e) => {
+    const entryDate = new Date(e.dateCreated)
+    return entryDate >= cutoffDate
+  }).length
 
   // current month vs previous month (always uses current/prev regardless of range)
   const leadsChange =
