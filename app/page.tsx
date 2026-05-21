@@ -145,10 +145,15 @@ export default async function DashboardPage({
   const rangeGoogleImpressions = filteredDaily.reduce((s, d) => s + d.impressions, 0)
   const rangeGoogleConversions = filteredDaily.reduce((s, d) => s + d.conversions, 0)
 
-  // ── Gravity Forms leads - always show all available months for the chart
-  // The date range filter applies to Google Ads data, not the leads over time chart
+  // ── Gravity Forms leads - filter by date range
   const monthlyLeadsData = data?.monthlyData ?? []
-  const rangeLeadTotal = monthlyLeadsData.reduce((s, m) => s + m.total, 0)
+  
+  // Filter leads to selected date range
+  const filteredMonthlyLeads = monthlyLeadsData.filter((m) => {
+    const monthDate = new Date(m.month + "-01")
+    return monthDate >= cutoffDate
+  })
+  const rangeLeadTotal = filteredMonthlyLeads.reduce((s, m) => s + m.total, 0)
 
   // current month vs previous month (always uses current/prev regardless of range)
   const leadsChange =
