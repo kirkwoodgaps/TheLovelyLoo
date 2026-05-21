@@ -17,6 +17,7 @@ import { fetchGoogleAdsData } from "@/lib/google-ads-api"
 import { fetchImportedGoogleAdsMetrics } from "@/lib/google-ads-imported"
 import { fetchGA4Data } from "@/lib/ga4"
 import { isConnected } from "@/lib/google-oauth"
+import { createClient } from "@/lib/supabase/server"
 
 const RANGE_CONFIG: Record<string, { days: number; label: string }> = {
   "7days": { days: 7, label: "Last 7 days" },
@@ -59,12 +60,24 @@ export default async function DashboardPage({
     isConnected("google_analytics"),
   ])
 
+  // Check manual import sources in Supabase
+  const supabase = await createClient()
+  const [contactsCountResult, callsCountResult] = await Promise.allSettled([
+    supabase.from("contacts").select("id", { count: "exact", head: true }),
+    supabase.from("google_ads_calls").select("id", { count: "exact", head: true }),
+  ])
+
   const data = gfResult.status === "fulfilled" ? gfResult.value : null
   const googleAdsFromSheet = googleAdsSheetResult.status === "fulfilled" ? googleAdsSheetResult.value : null
   const googleAdsFromApi = googleAdsApiResult.status === "fulfilled" ? googleAdsApiResult.value : null
   const googleAdsFromImport = googleAdsImportedResult.status === "fulfilled" ? googleAdsImportedResult.value : null
   const ga4Data = ga4Result.status === "fulfilled" ? ga4Result.value : null
   const googleConnected = googleConnectedResult.status === "fulfilled" ? googleConnectedResult.value : false
+  
+  // Check if manual imports have data
+  const hasContacts = contactsCountResult.status === "fulfilled" && (contactsCountResult.value.count ?? 0) > 0
+  const hasCalls = callsCountResult.status === "fulfilled" && (callsCountResult.value.count ?? 0) > 0
+  const hasGoogleAdsCsv = googleAdsFromImport?.hasData ?? false
   
   // Priority: Direct API > Imported CSV > Spreadsheet
   const useDirectApi = googleAdsFromApi?.hasData
@@ -218,6 +231,12 @@ export default async function DashboardPage({
     { name: "Google Ads", status: googleAds?.hasData ? "live" as const : "pending" as const },
     { name: "GA4", status: ga4Data?.hasData ? "live" as const : googleConnected ? "pending" as const : "error" as const },
   ]
+  
+  const manualSources = [
+    { name: "Google Ads CSV", status: hasGoogleAdsCsv ? "imported" as const : "none" as const },
+    { name: "17hats Contacts", status: hasContacts ? "imported" as const : "none" as const },
+    { name: "Call Records", status: hasCalls ? "imported" as const : "none" as const },
+  ]
 
   return (
     <main className="min-h-screen bg-background">
@@ -281,7 +300,7 @@ export default async function DashboardPage({
 
         {/* Data Sources & Footer */}
         <footer className="mt-8 border-t border-border/40 pt-4 pb-6 space-y-4">
-          <DataSourcesFooter sources={sources} />
+          <DataSourcesFooter sources={sources} manualSources={manualSources} />
           <div className="flex flex-col items-center justify-between gap-2 sm:flex-row pt-2 border-t border-border/20">
             <p className="text-xs text-muted-foreground">
               Data refreshes every 5 minutes

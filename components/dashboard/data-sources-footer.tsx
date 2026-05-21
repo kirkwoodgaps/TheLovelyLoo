@@ -5,17 +5,26 @@ type SourceStatus = {
   status: "live" | "pending" | "sample" | "error"
 }
 
-const manualImportSources = [
-  { name: "Google Ads CSV", status: "sample" as const },
-  { name: "17hats Contacts", status: "sample" as const },
-  { name: "Call Records", status: "sample" as const },
-]
+type ManualSourceStatus = {
+  name: string
+  status: "imported" | "none"
+}
 
 export function DataSourcesFooter({
   sources,
+  manualSources,
 }: {
   sources: SourceStatus[]
+  manualSources?: ManualSourceStatus[]
 }) {
+  const defaultManualSources: ManualSourceStatus[] = [
+    { name: "Google Ads CSV", status: "none" },
+    { name: "17hats Contacts", status: "none" },
+    { name: "Call Records", status: "none" },
+  ]
+  
+  const manualImportSources = manualSources ?? defaultManualSources
+
   return (
     <div className="flex flex-col gap-3">
       {/* Live Data Sources */}
@@ -67,10 +76,23 @@ export function DataSourcesFooter({
           <Badge
             key={s.name}
             variant="outline"
-            className="border-border bg-muted text-muted-foreground"
+            className={
+              s.status === "imported"
+                ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                : "border-border bg-muted text-muted-foreground"
+            }
           >
             <span className="relative mr-1.5 flex h-1.5 w-1.5">
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+              {s.status === "imported" && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              )}
+              <span
+                className={`relative inline-flex h-1.5 w-1.5 rounded-full ${
+                  s.status === "imported"
+                    ? "bg-emerald-500"
+                    : "bg-muted-foreground/50"
+                }`}
+              />
             </span>
             {s.name}
           </Badge>
