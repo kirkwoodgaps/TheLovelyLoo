@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 
-// Allow larger file uploads (up to 10MB) - App Router uses route segment config
+// Allow larger file uploads - App Router uses route segment config
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
@@ -116,10 +116,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
     
-    // Check file size (4MB limit for Vercel)
-    if (file.size > 4 * 1024 * 1024) {
+    // Check file size (10MB limit with config)
+    if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
-        { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 4MB.` },
+        { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.` },
         { status: 413 }
       )
     }
