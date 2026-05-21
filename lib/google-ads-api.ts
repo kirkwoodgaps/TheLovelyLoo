@@ -69,8 +69,8 @@ async function queryGoogleAds(
   const customerId = credentials.customerId.replace(/-/g, "")
   const managerCustomerId = credentials.managerCustomerId.replace(/-/g, "")
   
-  // Try multiple API versions in case one works
-  const apiVersions = ["v16", "v15", "v14"]
+  // Try multiple API versions in case one works (latest first)
+  const apiVersions = ["v20", "v19", "v18", "v17"]
   
   for (const version of apiVersions) {
     const url = `https://googleads.googleapis.com/${version}/customers/${customerId}/googleAds:search`
@@ -97,17 +97,15 @@ async function queryGoogleAds(
       return data.results || []
     }
     
-    // If 404, try next version
-    if (response.status === 404) {
+    // If 400/404, try next version
+    if (response.status === 400 || response.status === 404) {
       continue
     }
     
-    // For other errors, get details
-    const error = await response.text()
-    
     // If it's an auth/permission error, don't try other versions
     if (response.status === 401 || response.status === 403) {
-      throw new Error(`Google Ads API auth error: ${error}`)
+      const errorText = await response.text()
+      throw new Error(`Google Ads API auth error: ${errorText}`)
     }
   }
   
@@ -127,17 +125,21 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
   // Check if all credentials are configured
   if (!credentials.clientId || !credentials.clientSecret || !credentials.developerToken || 
       !credentials.customerId || !credentials.refreshToken) {
-    console.log("[v0] Google Ads API: Missing credentials")
     return null
   }
 
-  console.log("[v0] Google Ads API: Attempting to fetch data with refresh token starting with:", credentials.refreshToken.substring(0, 20) + "...")
-
   try {
     const accessToken = await getAccessToken(credentials)
-    console.log("[v0] Google Ads API: Successfully got access token")
 
-    // Query for campaign metrics (last 90 days)
+    // Calculate date range (last 90 days) - format: YYYY-MM-DD
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - 90)
+    const formatDate = (d: Date) => d.toISOString().split('T')[0]
+    const startDateStr = formatDate(startDate)
+    const endDateStr = formatDate(endDate)
+
+    // Query for campaign metrics (last 90 days) - use BETWEEN for date range
     const campaignQuery = `
       SELECT
         campaign.name,
@@ -146,7 +148,7 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
         metrics.cost_micros,
         metrics.conversions
       FROM campaign
-      WHERE segments.date DURING LAST_90_DAYS
+      WHERE segments.date BETWEEN '${startDateStr}' AND '${endDateStr}'
         AND campaign.status = 'ENABLED'
     `
 
@@ -159,7 +161,7 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
         metrics.cost_micros,
         metrics.conversions
       FROM customer
-      WHERE segments.date DURING LAST_90_DAYS
+      WHERE segments.date BETWEEN '${startDateStr}' AND '${endDateStr}'
     `
 
     const [campaignResults, dailyResults] = await Promise.all([
@@ -222,8 +224,7 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
       campaigns,
       daily,
     }
-  } catch (error) {
-    console.log("[v0] Google Ads API: Error fetching data:", error)
+  } catch {
     return null
   }
 }
