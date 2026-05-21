@@ -72,6 +72,11 @@ function getMostRecentDate(match: MatchedContact): string | null {
   return mostRecent.toISOString()
 }
 
+function getMostRecentTimestamp(match: MatchedContact): number {
+  const dateStr = getMostRecentDate(match)
+  return dateStr ? new Date(dateStr).getTime() : 0
+}
+
 interface MatchData {
   matches: MatchedContact[]
   totalContacts: number
@@ -196,6 +201,11 @@ export function MatchedContactsTable() {
     )
   }
 
+  // Sort matches by most recent date (descending)
+  const sortedMatches = data.matches.slice().sort((a, b) => {
+    return getMostRecentTimestamp(b) - getMostRecentTimestamp(a)
+  })
+
   return (
     <Card className="border-border/60 shadow-sm">
       <CardHeader className="pb-2">
@@ -257,7 +267,7 @@ export function MatchedContactsTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.matches.map((match) => (
+              {sortedMatches.map((match) => (
                 <>
                   <TableRow 
                     key={match.contact.id} 
@@ -372,9 +382,9 @@ export function MatchedContactsTable() {
             </TableBody>
           </Table>
         </div>
-        {data.matches.length > 50 && (
+        {sortedMatches.length > 50 && (
           <p className="text-xs text-muted-foreground text-center mt-4">
-            Showing first 50 of {data.matches.length} matched contacts
+            Showing first 50 of {sortedMatches.length} matched contacts
           </p>
         )}
       </CardContent>
