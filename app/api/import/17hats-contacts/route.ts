@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 
-// Allow larger file uploads (up to 10MB) - App Router uses route segment config
+// Allow larger file uploads - App Router uses route segment config
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
@@ -23,33 +23,42 @@ interface ContactRecord {
 }
 
 function parseCSV(csv: string): Record<string, string>[] {
-  const lines = csv.trim().split("\n")
+  const lines = csv.split(/\r?\n/)
   if (lines.length < 2) return []
 
-  // 17hats exports use tabs as delimiters
-  const delimiter = lines[0].includes("\t") ? "\t" : ","
+  // First, detect the delimiter and parse headers properly
+  // 17hats exports can use commas with quoted fields containing commas
+  const headerLine = lines[0]
   
-  const headers = delimiter === "\t" 
-    ? lines[0].split("\t").map((h) => h.trim().replace(/^"|"$/g, ""))
-    : lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""))
+  // Parse the header line handling quoted fields
+  const headers = parseCSVLine(headerLine).map((h) => h.trim().replace(/^"|"$/g, ""))
+  
+  console.log("[v0] Detected", headers.length, "columns in CSV")
+  console.log("[v0] First few headers:", headers.slice(0, 10))
   
   const rows: Record<string, string>[] = []
 
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim()
-    if (!line) continue
+    const line = lines[i]
+    if (!line || !line.trim()) continue
     
-    const values = delimiter === "\t"
-      ? line.split("\t").map(v => v.trim())
-      : parseCSVLine(line)
-    
-    const row: Record<string, string> = {}
-    headers.forEach((header, idx) => {
-      row[header] = values[idx]?.trim().replace(/^"|"$/g, "") || ""
-    })
-    rows.push(row)
+    try {
+      const values = parseCSVLine(line)
+      
+      const row: Record<string, string> = {}
+      headers.forEach((header, idx) => {
+        if (header) {
+          row[header] = values[idx]?.trim().replace(/^"|"$/g, "") || ""
+        }
+      })
+      rows.push(row)
+    } catch (e) {
+      console.log("[v0] Skipping malformed row", i, e)
+      continue
+    }
   }
 
+  console.log("[v0] Parsed", rows.length, "rows from CSV")
   return rows
 }
 
@@ -107,10 +116,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
     
-    // Check file size (4MB limit for Vercel)
-    if (file.size > 4 * 1024 * 1024) {
+    // Check file size (10MB limit with config)
+    if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
-        { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 4MB.` },
+        { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.` },
         { status: 413 }
       )
     }
@@ -123,41 +132,52 @@ export async function POST(request: NextRequest) {
     }
 
     // Map CSV columns to database columns
-    // 17hats export has: Full Name, First Name, Last Name, Company Name, Type, Email, and many phone columns
-    // Phone columns are named after contacts (e.g., "Brenda Phone", "Rich Phone")
-    // We need to find any non-empty email and phone values
+    // 17hats export has: Full Name, First Name, Last Name, Company Name, Type, Email, then many specific person email/phone columns
+    // Column indices: 0=Full Name, 1=First Name, 2=Last Name, 3=Company Name, 4=Type, 5=Email
+    // Then columns 6+ are named like "Person Name Email" or "Primary Email"
+    // Phone columns appear later in the file
     const records: ContactRecord[] = rows.map((row) => {
-      // Find the first non-empty email (17hats has many email columns)
+      // Find the first non-empty email
+      // Priority: Email column (6th column) > Primary Email > any column with "Email" containing @
       let email = row["Email"] || ""
-      if (!email) {
-        // Look for "Primary Email" or any column ending with "Email" that has a value
+      if (!email || !email.includes("@")) {
+        email = row["Primary Email"] || ""
+      }
+      if (!email || !email.includes("@")) {
+        // Look for any column ending with "Email" that has a valid value
         for (const [key, value] of Object.entries(row)) {
-          if (key.toLowerCase().includes("email") && value && value.includes("@")) {
+          if (key.endsWith("Email") && value && value.includes("@")) {
             email = value
             break
           }
         }
       }
       
-      // Find the first non-empty phone (17hats has many phone columns)
+      // Find the first non-empty phone
+      // Look for "Primary Phone" first, then any column ending with "Phone"
       let phone = row["Phone"] || ""
-      if (!phone) {
-        // Look for any column ending with "Phone" that has a value
+      if (!phone || !phone.match(/\d/)) {
+        phone = row["Primary Phone"] || ""
+      }
+      if (!phone || !phone.match(/\d/)) {
         for (const [key, value] of Object.entries(row)) {
-          if (key.toLowerCase().includes("phone") && value && value.match(/\d/)) {
+          if (key.endsWith("Phone") && value && value.match(/\d/)) {
             phone = value
             break
           }
         }
       }
       
+      // Get address from the end of the file where location data tends to be
+      const address = row["Address"] || row["Street Address"] || null
+      
       return {
         first_name:
           row["First Name"] || row["First name"] || row["first_name"] || row["FirstName"] || "",
         last_name:
           row["Last Name"] || row["Last name"] || row["last_name"] || row["LastName"] || "",
-        email,
-        phone,
+        email: email || "",
+        phone: phone || "",
         company:
           row["Company Name"] || row["Company"] || row["company"] || row["Business"] || null,
         lead_source:
@@ -168,8 +188,7 @@ export async function POST(request: NextRequest) {
           row["Tags"] || row["tags"] || row["Categories"] || null,
         notes:
           row["Notes"] || row["notes"] || row["Comments"] || row["Description"] || null,
-        address:
-          row["Address"] || row["address"] || row["Street"] || row["Street Address"] || null,
+        address,
         city:
           row["City"] || row["city"] || null,
         state:
@@ -181,6 +200,8 @@ export async function POST(request: NextRequest) {
         ),
       }
     })
+
+    console.log("[v0] Sample record:", JSON.stringify(records[0], null, 2))
 
     // Filter out records without email or phone
     const validRecords = records.filter((r) => r.email || r.phone)
@@ -195,7 +216,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     const { data, error } = await supabase
-      .from("contacts_17hats")
+      .from("contacts")
       .insert(validRecords)
       .select()
 
@@ -226,7 +247,7 @@ export async function GET() {
     const supabase = await createClient()
 
     const { data, error } = await supabase
-      .from("contacts_17hats")
+      .from("contacts")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(500)

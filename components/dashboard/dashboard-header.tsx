@@ -16,7 +16,7 @@ export function DashboardHeader() {
           />
           <div className="h-8 w-px bg-border/60 hidden sm:block" />
           <p className="text-sm text-muted-foreground hidden sm:block">
-            Leads & Ad Spend Dashboard
+            Leads and Analytics
           </p>
         </div>
       </div>
