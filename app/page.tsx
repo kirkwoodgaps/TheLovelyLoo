@@ -149,21 +149,26 @@ export default async function DashboardPage({
   const monthlyLeadsData = data?.monthlyData ?? []
   const allEntries = data?.rangeEntries ?? []
   
-  // Filter raw entries to selected date range (more accurate than monthly aggregates)
-  const rangeLeadTotal = allEntries.filter((e) => {
+  // Filter raw entries to selected date range
+  const rangeLeads = allEntries.filter((e) => {
     const entryDate = new Date(e.dateCreated)
     return entryDate >= cutoffDate
+  })
+  const rangeLeadTotal = rangeLeads.length
+  
+  // Calculate prior period for comparison (same length, immediately before)
+  const priorPeriodStart = new Date(cutoffDate)
+  priorPeriodStart.setDate(priorPeriodStart.getDate() - cutoffDays)
+  
+  const priorPeriodLeads = allEntries.filter((e) => {
+    const entryDate = new Date(e.dateCreated)
+    return entryDate >= priorPeriodStart && entryDate < cutoffDate
   }).length
-
-  // current month vs previous month (always uses current/prev regardless of range)
-  const leadsChange =
-    data && data.previousMonthLeads > 0
-      ? Math.round(
-          ((data.currentMonthLeads - data.previousMonthLeads) /
-            data.previousMonthLeads) *
-            1000
-        ) / 10
-      : 0
+  
+  // Calculate percentage change vs prior period
+  const leadsChange = priorPeriodLeads > 0
+    ? Math.round(((rangeLeadTotal - priorPeriodLeads) / priorPeriodLeads) * 1000) / 10
+    : 0
 
   // ── KPI data ─────────────────────────────────────────────
   const kpi = {
