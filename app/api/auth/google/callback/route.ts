@@ -21,9 +21,10 @@ export async function GET(request: NextRequest) {
 
     const tokens = await exchangeCodeForTokens(code, redirectUri)
 
-    // Save tokens for both services (they share the same OAuth consent)
+    // Save tokens for all services (they share the same OAuth consent)
     await saveTokens("google_analytics", tokens.access_token, tokens.refresh_token, tokens.expires_in)
     await saveTokens("search_console", tokens.access_token, tokens.refresh_token, tokens.expires_in)
+    await saveTokens("google_ads", tokens.access_token, tokens.refresh_token, tokens.expires_in)
 
     return NextResponse.redirect(new URL("/?connected=google", request.url))
   } catch (err) {

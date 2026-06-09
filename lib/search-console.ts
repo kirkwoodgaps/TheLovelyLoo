@@ -4,6 +4,8 @@ const SEARCH_CONSOLE_API = "https://www.googleapis.com/webmasters/v3"
 
 export interface SearchConsoleData {
   hasData: boolean
+  // When set, explains why no data could be loaded so the UI can guide the user.
+  error?: "api_disabled" | "no_property" | "request_failed"
   totalClicks: number
   totalImpressions: number
   avgCtr: number
@@ -100,7 +102,12 @@ export async function fetchSearchConsoleData(
     )
 
     if (!dateResponse.ok || !queryResponse.ok || !pageResponse.ok) {
-      console.error("Search Console API error")
+      const failed = !dateResponse.ok ? dateResponse : !queryResponse.ok ? queryResponse : pageResponse
+      const errorBody = await failed.text().catch(() => "")
+      console.error(
+        `[v0] Search Console API error: ${failed.status} for site "${siteUrl}" -`,
+        errorBody
+      )
       return null
     }
 
@@ -154,8 +161,10 @@ export async function fetchSearchConsoleData(
 }
 
 // Resolves the right site URL automatically, then fetches data.
-// Prefers SEARCH_CONSOLE_SITE_URL env var, otherwise auto-detects from the
-// account's verified sites (matching thelovelyloo).
+// Search Console properties are identified as either a URL-prefix property
+// ("https://thelovelyloo.com/") or a domain property ("sc-domain:thelovelyloo.com").
+// A bare domain like "thelovelyloo.com" is INVALID and returns 403, so we always
+// validate against the account's actual verified properties.
 export async function fetchSearchConsoleDataAuto(
   startDate: string,
   endDate: string
@@ -165,28 +174,80 @@ export async function fetchSearchConsoleDataAuto(
     return null
   }
 
-  let siteUrl = process.env.SEARCH_CONSOLE_SITE_URL || ""
+  const emptyData: SearchConsoleData = {
+    hasData: false,
+    totalClicks: 0,
+    totalImpressions: 0,
+    avgCtr: 0,
+    avgPosition: 0,
+    topQueries: [],
+    topPages: [],
+    daily: [],
+  }
+
+  // Get the list of properties this account actually has verified access to.
+  const { sites, apiDisabled } = await getSearchConsoleSites()
+  console.log("[v0] Search Console verified sites:", sites, "apiDisabled:", apiDisabled)
+
+  if (apiDisabled) {
+    return { ...emptyData, error: "api_disabled" }
+  }
+
+  if (sites.length === 0) {
+    console.log("[v0] Search Console: no verified sites found for this account")
+    return { ...emptyData, error: "no_property" }
+  }
+
+  const envSite = (process.env.SEARCH_CONSOLE_SITE_URL || "").trim()
+
+  // Normalize a candidate to compare against the verified list (strip protocol,
+  // trailing slash, and the sc-domain: prefix, lowercased).
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/^sc-domain:/, "")
+      .replace(/^https?:\/\//, "")
+      .replace(/\/$/, "")
+
+  let siteUrl = ""
+
+  if (envSite) {
+    // Try to match the env var to a real verified property, regardless of the
+    // exact format the user entered (bare domain, with/without protocol, etc.).
+    const target = normalize(envSite)
+    siteUrl =
+      // exact match first
+      sites.find((s) => s === envSite) ||
+      // then match by normalized host
+      sites.find((s) => normalize(s) === target) ||
+      ""
+    if (!siteUrl) {
+      console.log(
+        `[v0] Search Console: env SEARCH_CONSOLE_SITE_URL="${envSite}" did not match any verified property; falling back to auto-detect`
+      )
+    }
+  }
 
   if (!siteUrl) {
-    const sites = await getSearchConsoleSites()
-    if (sites.length === 0) {
-      return null
-    }
-    // Prefer a site that matches the business domain, then a domain property,
-    // then fall back to the first verified site.
+    // Prefer a property matching the business domain, then a domain property,
+    // then the first verified property.
     siteUrl =
-      sites.find((s) => s.toLowerCase().includes("thelovelyloo")) ||
+      sites.find((s) => normalize(s).includes("thelovelyloo")) ||
       sites.find((s) => s.startsWith("sc-domain:")) ||
       sites[0]
   }
 
+  console.log("[v0] Search Console: querying property:", siteUrl)
   return fetchSearchConsoleData(siteUrl, startDate, endDate)
 }
 
-export async function getSearchConsoleSites(): Promise<string[]> {
+export async function getSearchConsoleSites(): Promise<{
+  sites: string[]
+  apiDisabled: boolean
+}> {
   const accessToken = await getValidAccessToken("search_console")
   if (!accessToken) {
-    return []
+    return { sites: [], apiDisabled: false }
   }
 
   try {
@@ -197,13 +258,23 @@ export async function getSearchConsoleSites(): Promise<string[]> {
     })
 
     if (!response.ok) {
-      return []
+      const errorBody = await response.text().catch(() => "")
+      console.error(`[v0] Search Console /sites error: ${response.status} -`, errorBody)
+      // A 403 mentioning the API being disabled / not enabled means the
+      // Search Console API hasn't been turned on in the Google Cloud project.
+      const apiDisabled =
+        response.status === 403 &&
+        /searchconsole\.googleapis\.com|accessNotConfigured|has not been used|disabled/i.test(errorBody)
+      return { sites: [], apiDisabled }
     }
 
     const data = await response.json()
-    return (data.siteEntry || []).map((site: any) => site.siteUrl)
+    return {
+      sites: (data.siteEntry || []).map((site: any) => site.siteUrl),
+      apiDisabled: false,
+    }
   } catch (error) {
     console.error("Error fetching Search Console sites:", error)
-    return []
+    return { sites: [], apiDisabled: false }
   }
 }

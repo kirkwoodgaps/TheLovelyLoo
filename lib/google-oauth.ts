@@ -3,10 +3,11 @@ import { createClient } from "@/lib/supabase/server"
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
 
-// Scopes for Search Console and GA4
+// Scopes for Search Console, GA4, and Google Ads
 const SCOPES = [
   "https://www.googleapis.com/auth/webmasters.readonly", // Search Console
   "https://www.googleapis.com/auth/analytics.readonly", // GA4
+  "https://www.googleapis.com/auth/adwords", // Google Ads
 ].join(" ")
 
 export function getGoogleAuthUrl(redirectUri: string): string {
@@ -108,16 +109,16 @@ export async function getValidAccessToken(service: string): Promise<string | nul
   } catch (error) {
     console.error("Failed to refresh token:", error)
 
-    // GA4 and Search Console share the same Google credential, so if the
-    // refresh token is dead (revoked/expired - "invalid_grant") they are BOTH
-    // dead. Clear all Google token rows so the UI prompts the user to
+    // GA4, Search Console, and Google Ads all share the same Google credential,
+    // so if the refresh token is dead (revoked/expired - "invalid_grant") they
+    // are ALL dead. Clear every Google token row so the UI prompts the user to
     // reconnect instead of silently showing "no data" forever.
     const message = error instanceof Error ? error.message : String(error)
     if (message.includes("invalid_grant")) {
       await supabase
         .from("google_oauth_tokens")
         .delete()
-        .in("service", ["google_analytics", "search_console"])
+        .in("service", ["google_analytics", "search_console", "google_ads"])
     }
 
     return null

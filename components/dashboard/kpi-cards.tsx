@@ -1,13 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -26,7 +20,6 @@ import {
   DollarSign,
   Target,
 } from "lucide-react"
-import { useRouter, usePathname } from "next/navigation"
 
 interface CampaignMetrics {
   spend: number
@@ -103,19 +96,29 @@ const rangeLabels: Record<string, string> = {
   "alltime": "All time",
 }
 
-export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics: CampaignMetrics | null }) {
-  const router = useRouter()
-  const pathname = usePathname()
+export function KpiCards({
+  data,
+  googleMetrics,
+  adsIsLive = false,
+  adsConnected = false,
+}: {
+  data: KpiData
+  googleMetrics: CampaignMetrics | null
+  adsIsLive?: boolean
+  adsConnected?: boolean
+}) {
   const currentRange = data.currentRange || "6months"
   const rl = data.rangeLabel || "Last 6 months"
 
-  function handleRangeChange(value: string) {
-    const params = new URLSearchParams()
-    if (value !== "6months") {
-      params.set("range", value)
+  function handleConnectAds() {
+    const url = "/api/auth/google"
+    // Google blocks its sign-in page from loading inside an iframe (like the
+    // v0 preview). If we're framed, break out into a new top-level tab.
+    if (typeof window !== "undefined" && window.self !== window.top) {
+      window.open(url, "_blank", "noopener,noreferrer")
+    } else {
+      window.location.href = url
     }
-    const qs = params.toString()
-    router.push(qs ? `${pathname}?${qs}` : pathname)
   }
 
   // Lifetime/All-Time metrics (never change with date range)
@@ -209,19 +212,7 @@ export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-muted-foreground">Selected Period</h3>
-          <Select value={currentRange} onValueChange={handleRangeChange}>
-            <SelectTrigger className="w-[160px] border-border/60 bg-card text-sm">
-              <SelectValue>{rangeLabels[currentRange] || "Last 6 months"}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7days">Last 7 days</SelectItem>
-              <SelectItem value="30days">Last 30 days</SelectItem>
-              <SelectItem value="3months">Last 3 months</SelectItem>
-              <SelectItem value="6months">Last 6 months</SelectItem>
-              <SelectItem value="12months">Last 12 months</SelectItem>
-              <SelectItem value="alltime">All time</SelectItem>
-            </SelectContent>
-          </Select>
+          <span className="text-sm font-medium text-foreground">{rangeLabels[currentRange] || rl}</span>
         </div>
         {/* KPI Cards - Horizontal Row */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
@@ -261,12 +252,26 @@ export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics
           {googleMetrics ? (
               <Card className="border-border/60 shadow-sm h-full">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold">
-                    Google Ads Campaign Performance
-                  </CardTitle>
-                  <CardDescription>
-                    Detailed metrics by campaign (enabled campaigns only)
-                  </CardDescription>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-base font-semibold">
+                        Google Ads Campaign Performance
+                      </CardTitle>
+                      <CardDescription>
+                        Detailed metrics by campaign (enabled campaigns only)
+                      </CardDescription>
+                    </div>
+                    {!adsIsLive && (
+                      <Button size="sm" variant="outline" onClick={handleConnectAds} className="shrink-0">
+                        {adsConnected ? "Reconnect Google Ads" : "Connect Google Ads"}
+                      </Button>
+                    )}
+                  </div>
+                  {!adsIsLive && (
+                    <p className="mt-2 text-xs text-muted-foreground/80">
+                      Showing imported data. Connect your Google account to pull live, up-to-date campaign metrics.
+                    </p>
+                  )}
                 </CardHeader>
                 <CardContent className="pt-0">
                   {/* Summary Row */}
@@ -317,9 +322,12 @@ export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics
             ) : (
               <Card className="border-border/60 shadow-sm h-full flex items-center justify-center">
                 <CardContent className="py-12 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Google Ads data not available. Connect your Google Ads account or import CSV data.
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Google Ads data not available. Connect your Google account to pull live campaign metrics, or import CSV data.
                   </p>
+                  <Button variant="outline" onClick={handleConnectAds}>
+                    {adsConnected ? "Reconnect Google Ads" : "Connect Google Ads"}
+                  </Button>
                 </CardContent>
               </Card>
           )}

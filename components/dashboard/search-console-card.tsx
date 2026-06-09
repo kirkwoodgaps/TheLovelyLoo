@@ -46,6 +46,43 @@ export function SearchConsoleCard({ data, isConnected }: SearchConsoleCardProps)
   }
 
   if (!data?.hasData) {
+    // The Search Console API isn't enabled in the Google Cloud project yet.
+    if (data?.error === "api_disabled") {
+      return (
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Search className="h-5 w-5" />
+              Google Search Console
+            </CardTitle>
+            <CardDescription>Organic search performance</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+            <p className="text-sm font-medium text-foreground mb-1">
+              Search Console API not enabled
+            </p>
+            <p className="text-sm text-muted-foreground mb-4 max-w-md">
+              Enable the Search Console API in your Google Cloud project, then reload.
+              GA4 already works because the Analytics API is enabled &mdash; Search
+              Console needs the same one-time step.
+            </p>
+            <Button asChild variant="outline">
+              <a
+                href="https://console.developers.google.com/apis/api/searchconsole.googleapis.com/overview"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2"
+              >
+                Enable Search Console API
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    // Connected and API enabled, but no verified property matched / no data.
     return (
       <Card className="border-border/60 shadow-sm">
         <CardHeader>
@@ -57,7 +94,9 @@ export function SearchConsoleCard({ data, isConnected }: SearchConsoleCardProps)
         </CardHeader>
         <CardContent className="py-8 text-center">
           <p className="text-sm text-muted-foreground">
-            No Search Console data available for this period.
+            {data?.error === "no_property"
+              ? "No verified Search Console property found for this Google account."
+              : "No Search Console data available for this period."}
           </p>
         </CardContent>
       </Card>
