@@ -1,5 +1,7 @@
 // Direct Google Ads API integration
-// Uses OAuth 2.0 with refresh token for authentication
+// Uses the shared Google OAuth token (same "Connect Google Account" flow as
+// GA4 / Search Console), falling back to a standalone GOOGLE_ADS_REFRESH_TOKEN.
+import { getValidAccessToken } from "@/lib/google-oauth"
 
 interface GoogleAdsCredentials {
   clientId: string
@@ -70,7 +72,7 @@ async function queryGoogleAds(
   const managerCustomerId = credentials.managerCustomerId.replace(/-/g, "")
   
   // Try multiple API versions in case one works (latest first)
-  const apiVersions = ["v20", "v19", "v18", "v17"]
+  const apiVersions = ["v21", "v20", "v19", "v18"]
   
   for (const version of apiVersions) {
     const url = `https://googleads.googleapis.com/${version}/customers/${customerId}/googleAds:search`
@@ -122,14 +124,26 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
     refreshToken: process.env.GOOGLE_ADS_REFRESH_TOKEN || "",
   }
 
-  // Check if all credentials are configured
-  if (!credentials.clientId || !credentials.clientSecret || !credentials.developerToken || 
-      !credentials.customerId || !credentials.refreshToken) {
+  // A developer token and customer ID are always required.
+  if (!credentials.developerToken || !credentials.customerId) {
+    console.log("[v0] Google Ads: missing developer token or customer ID")
     return null
   }
 
   try {
-    const accessToken = await getAccessToken(credentials)
+    // Prefer the shared "Connect Google Account" OAuth token (kept alive by the
+    // reconnect flow). Fall back to the standalone refresh token if present.
+    let accessToken = await getValidAccessToken("google_ads")
+
+    if (!accessToken) {
+      if (credentials.clientId && credentials.clientSecret && credentials.refreshToken) {
+        console.log("[v0] Google Ads: no shared OAuth token, trying standalone refresh token")
+        accessToken = await getAccessToken(credentials)
+      } else {
+        console.log("[v0] Google Ads: not connected (no shared token and no standalone refresh token)")
+        return null
+      }
+    }
 
     // Calculate date range (last 90 days) - format: YYYY-MM-DD
     const endDate = new Date()
@@ -224,7 +238,8 @@ export async function fetchGoogleAdsData(): Promise<GoogleAdsData | null> {
       campaigns,
       daily,
     }
-  } catch {
+  } catch (error) {
+    console.error("[v0] Google Ads API error:", error instanceof Error ? error.message : error)
     return null
   }
 }
