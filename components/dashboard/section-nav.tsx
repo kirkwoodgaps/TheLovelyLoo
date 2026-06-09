@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { cn } from "@/lib/utils"
+import { RangeSelector } from "@/components/dashboard/range-selector"
 
 const sections = [
   { id: "kpi", label: "Overview" },
@@ -51,21 +52,28 @@ export function SectionNav() {
 
   return (
     <nav className="sticky top-0 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 bg-background/95 backdrop-blur-sm border-b border-border/40 mb-4">
-      <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-        {sections.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => scrollToSection(id)}
-            className={cn(
-              "px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors",
-              activeSection === id
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1 min-w-0">
+          {sections.map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => scrollToSection(id)}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors",
+                activeSection === id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="shrink-0">
+          <Suspense fallback={null}>
+            <RangeSelector />
+          </Suspense>
+        </div>
       </div>
     </nav>
   )

@@ -2,13 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Table,
   TableBody,
   TableCell,
@@ -26,7 +19,6 @@ import {
   DollarSign,
   Target,
 } from "lucide-react"
-import { useRouter, usePathname } from "next/navigation"
 
 interface CampaignMetrics {
   spend: number
@@ -104,19 +96,8 @@ const rangeLabels: Record<string, string> = {
 }
 
 export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics: CampaignMetrics | null }) {
-  const router = useRouter()
-  const pathname = usePathname()
   const currentRange = data.currentRange || "6months"
   const rl = data.rangeLabel || "Last 6 months"
-
-  function handleRangeChange(value: string) {
-    const params = new URLSearchParams()
-    if (value !== "6months") {
-      params.set("range", value)
-    }
-    const qs = params.toString()
-    router.push(qs ? `${pathname}?${qs}` : pathname)
-  }
 
   // Lifetime/All-Time metrics (never change with date range)
   const lifetimeCards: {
@@ -209,19 +190,7 @@ export function KpiCards({ data, googleMetrics }: { data: KpiData; googleMetrics
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-muted-foreground">Selected Period</h3>
-          <Select value={currentRange} onValueChange={handleRangeChange}>
-            <SelectTrigger className="w-[160px] border-border/60 bg-card text-sm">
-              <SelectValue>{rangeLabels[currentRange] || "Last 6 months"}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7days">Last 7 days</SelectItem>
-              <SelectItem value="30days">Last 30 days</SelectItem>
-              <SelectItem value="3months">Last 3 months</SelectItem>
-              <SelectItem value="6months">Last 6 months</SelectItem>
-              <SelectItem value="12months">Last 12 months</SelectItem>
-              <SelectItem value="alltime">All time</SelectItem>
-            </SelectContent>
-          </Select>
+          <span className="text-sm font-medium text-foreground">{rangeLabels[currentRange] || rl}</span>
         </div>
         {/* KPI Cards - Horizontal Row */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">

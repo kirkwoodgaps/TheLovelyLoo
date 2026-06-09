@@ -35,8 +35,8 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ range?: string }>
 }) {
-  const { range = "6months" } = await searchParams
-  const { days: cutoffDays, label: rangeLabel } = RANGE_CONFIG[range] ?? RANGE_CONFIG["6months"]
+  const { range = "7days" } = await searchParams
+  const { days: cutoffDays, label: rangeLabel } = RANGE_CONFIG[range] ?? RANGE_CONFIG["7days"]
 
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - cutoffDays)

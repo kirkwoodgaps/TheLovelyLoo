@@ -3,15 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { BarChart3, TrendingUp, TrendingDown, Users, Eye, Clock, ArrowUpRight } from "lucide-react"
-import { useRouter, usePathname } from "next/navigation"
 import type { GA4Data } from "@/lib/ga4"
 
 interface GA4CardProps {
@@ -30,9 +22,6 @@ const rangeLabels: Record<string, string> = {
 }
 
 export function GA4Card({ data, isConnected, currentRange = "6months" }: GA4CardProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-
   function handleConnect() {
     const url = "/api/auth/google"
     // Google blocks its sign-in page from loading inside an iframe (like the
@@ -42,15 +31,6 @@ export function GA4Card({ data, isConnected, currentRange = "6months" }: GA4Card
     } else {
       window.location.href = url
     }
-  }
-
-  function handleRangeChange(value: string) {
-    const params = new URLSearchParams()
-    if (value !== "6months") {
-      params.set("range", value)
-    }
-    const qs = params.toString()
-    router.push(qs ? `${pathname}?${qs}` : pathname)
   }
 
   if (!isConnected) {
@@ -87,19 +67,9 @@ export function GA4Card({ data, isConnected, currentRange = "6months" }: GA4Card
               </CardTitle>
               <CardDescription>Website traffic and user behavior</CardDescription>
             </div>
-            <Select value={currentRange} onValueChange={handleRangeChange}>
-              <SelectTrigger className="w-[140px] border-border/60 bg-card text-sm">
-                <SelectValue>{rangeLabels[currentRange] || "Last 6 months"}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7days">Last 7 days</SelectItem>
-                <SelectItem value="30days">Last 30 days</SelectItem>
-                <SelectItem value="3months">Last 3 months</SelectItem>
-                <SelectItem value="6months">Last 6 months</SelectItem>
-                <SelectItem value="12months">Last 12 months</SelectItem>
-                <SelectItem value="alltime">All time</SelectItem>
-              </SelectContent>
-            </Select>
+            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              {rangeLabels[currentRange] || "Last 6 months"}
+            </span>
           </div>
         </CardHeader>
         <CardContent className="py-8 text-center">
@@ -161,19 +131,9 @@ export function GA4Card({ data, isConnected, currentRange = "6months" }: GA4Card
             </CardTitle>
             <CardDescription>Website traffic and user behavior</CardDescription>
           </div>
-          <Select value={currentRange} onValueChange={handleRangeChange}>
-            <SelectTrigger className="w-[140px] border-border/60 bg-card text-sm">
-              <SelectValue>{rangeLabels[currentRange] || "Last 6 months"}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7days">Last 7 days</SelectItem>
-              <SelectItem value="30days">Last 30 days</SelectItem>
-              <SelectItem value="3months">Last 3 months</SelectItem>
-              <SelectItem value="6months">Last 6 months</SelectItem>
-              <SelectItem value="12months">Last 12 months</SelectItem>
-              <SelectItem value="alltime">All time</SelectItem>
-            </SelectContent>
-          </Select>
+          <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+            {rangeLabels[currentRange] || "Last 6 months"}
+          </span>
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-6">
