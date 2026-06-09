@@ -53,6 +53,7 @@ export default async function DashboardPage({
     ga4Result,
     searchConsoleResult,
     googleConnectedResult,
+    googleAdsConnectedResult,
   ] = await Promise.allSettled([
     getDashboardData(),
     fetchGoogleAdsSummary(),
@@ -63,6 +64,7 @@ export default async function DashboardPage({
     // Search Console - auto-resolves the verified site
     fetchSearchConsoleDataAuto(startDate, endDate),
     isConnected("google_analytics"),
+    isConnected("google_ads"),
   ])
 
   // Check manual import sources in Supabase
@@ -79,6 +81,7 @@ export default async function DashboardPage({
   const ga4Data = ga4Result.status === "fulfilled" ? ga4Result.value : null
   const searchConsoleData = searchConsoleResult.status === "fulfilled" ? searchConsoleResult.value : null
   const googleConnected = googleConnectedResult.status === "fulfilled" ? googleConnectedResult.value : false
+  const googleAdsConnected = googleAdsConnectedResult.status === "fulfilled" ? googleAdsConnectedResult.value : false
   
   // Check if manual imports have data
   const hasContacts = contactsCountResult.status === "fulfilled" && (contactsCountResult.value.count ?? 0) > 0
@@ -264,7 +267,7 @@ export default async function DashboardPage({
 
         {/* KPI Cards - Lifetime Totals, Selected Period, and Campaign Performance */}
         <section id="kpi" className="mt-2" aria-label="Key performance indicators">
-          <KpiCards data={kpi} googleMetrics={googleMetrics} />
+          <KpiCards data={kpi} googleMetrics={googleMetrics} adsIsLive={!!useDirectApi} adsConnected={googleAdsConnected} />
         </section>
 
         {/* Leads Charts Row */}
