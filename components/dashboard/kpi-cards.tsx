@@ -80,6 +80,14 @@ function formatCurrency(value: number) {
   })
 }
 
+// Money with cents: thousands separators + exactly 2 decimal places.
+function formatMoney(value: number) {
+  return "$" + value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
 const formIcons: Record<string, typeof Users> = {
   "1": MessageSquare,
   "2": ClipboardList,
@@ -165,14 +173,14 @@ export function KpiCards({
   if (data.hasGoogleAds && data.googleAdsSpend !== undefined) {
     dynamicCards.push({
       label: "Google Ad Spend",
-      value: formatCurrency(data.googleAdsSpend),
+      value: formatMoney(data.googleAdsSpend),
       icon: DollarSign,
       showTrend: false,
       sublabel: rl,
     })
     dynamicCards.push({
       label: "Google Conversions",
-      value: formatNumber(data.googleAdsConversions || 0),
+      value: formatNumber(Math.round(data.googleAdsConversions || 0)),
       icon: Target,
       showTrend: false,
       sublabel: rl,
@@ -278,7 +286,7 @@ export function KpiCards({
                   <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
                     <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-center">
                       <p className="text-xs font-medium text-muted-foreground uppercase">Total Spend</p>
-                      <p className="mt-1 text-lg font-bold text-foreground">${googleMetrics.spend.toLocaleString()}</p>
+                      <p className="mt-1 text-lg font-bold text-foreground">{formatMoney(googleMetrics.spend)}</p>
                     </div>
                     <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-center">
                       <p className="text-xs font-medium text-muted-foreground uppercase">Clicks</p>
@@ -309,7 +317,7 @@ export function KpiCards({
                         {googleMetrics.campaigns.map((campaign) => (
                           <TableRow key={campaign.name} className="border-border/40">
                             <TableCell className="font-medium text-foreground">{campaign.name}</TableCell>
-                            <TableCell className="text-right font-mono text-sm">${campaign.spend.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">{formatMoney(campaign.spend)}</TableCell>
                             <TableCell className="text-right font-mono text-sm">{campaign.clicks.toLocaleString()}</TableCell>
                             <TableCell className="text-right font-mono text-sm font-semibold">{Math.round(campaign.conversions)}</TableCell>
                           </TableRow>
