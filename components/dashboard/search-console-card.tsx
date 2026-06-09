@@ -12,6 +12,17 @@ interface SearchConsoleCardProps {
 }
 
 export function SearchConsoleCard({ data, isConnected }: SearchConsoleCardProps) {
+  function handleConnect() {
+    const url = "/api/auth/google"
+    // Google blocks its sign-in page from loading inside an iframe (like the
+    // v0 preview). If we're framed, break out into a new top-level tab.
+    if (typeof window !== "undefined" && window.self !== window.top) {
+      window.open(url, "_blank", "noopener,noreferrer")
+    } else {
+      window.location.href = url
+    }
+  }
+
   if (!isConnected) {
     return (
       <Card className="border-border/60 shadow-sm">
@@ -26,10 +37,8 @@ export function SearchConsoleCard({ data, isConnected }: SearchConsoleCardProps)
           <p className="text-sm text-muted-foreground mb-4">
             Connect Google to view Search Console data
           </p>
-          <Button asChild>
-            <a href="/api/auth/google">
-              Connect Google Account
-            </a>
+          <Button onClick={handleConnect}>
+            Connect Google Account
           </Button>
         </CardContent>
       </Card>

@@ -33,6 +33,17 @@ export function GA4Card({ data, isConnected, currentRange = "6months" }: GA4Card
   const router = useRouter()
   const pathname = usePathname()
 
+  function handleConnect() {
+    const url = "/api/auth/google"
+    // Google blocks its sign-in page from loading inside an iframe (like the
+    // v0 preview). If we're framed, break out into a new top-level tab.
+    if (typeof window !== "undefined" && window.self !== window.top) {
+      window.open(url, "_blank", "noopener,noreferrer")
+    } else {
+      window.location.href = url
+    }
+  }
+
   function handleRangeChange(value: string) {
     const params = new URLSearchParams()
     if (value !== "6months") {
@@ -56,10 +67,8 @@ export function GA4Card({ data, isConnected, currentRange = "6months" }: GA4Card
           <p className="text-sm text-muted-foreground mb-4">
             Connect Google to view Analytics data
           </p>
-          <Button asChild>
-            <a href="/api/auth/google">
-              Connect Google Account
-            </a>
+          <Button onClick={handleConnect}>
+            Connect Google Account
           </Button>
         </CardContent>
       </Card>

@@ -89,18 +89,37 @@ export async function getValidAccessToken(service: string): Promise<string | nul
     const newTokens = await refreshAccessToken(tokenData.refresh_token)
     const newExpiresAt = new Date(Date.now() + newTokens.expires_in * 1000)
 
+    const update: Record<string, string> = {
+      access_token: newTokens.access_token,
+      expires_at: newExpiresAt.toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    // Google occasionally returns a rotated refresh_token. If so, persist it.
+    if (newTokens.refresh_token) {
+      update.refresh_token = newTokens.refresh_token
+    }
+
     await supabase
       .from("google_oauth_tokens")
-      .update({
-        access_token: newTokens.access_token,
-        expires_at: newExpiresAt.toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .update(update)
       .eq("service", service)
 
     return newTokens.access_token
   } catch (error) {
     console.error("Failed to refresh token:", error)
+
+    // GA4 and Search Console share the same Google credential, so if the
+    // refresh token is dead (revoked/expired - "invalid_grant") they are BOTH
+    // dead. Clear all Google token rows so the UI prompts the user to
+    // reconnect instead of silently showing "no data" forever.
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes("invalid_grant")) {
+      await supabase
+        .from("google_oauth_tokens")
+        .delete()
+        .in("service", ["google_analytics", "search_console"])
+    }
+
     return null
   }
 }
