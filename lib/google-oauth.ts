@@ -101,6 +101,18 @@ export async function getValidAccessToken(service: string): Promise<string | nul
     return newTokens.access_token
   } catch (error) {
     console.error("Failed to refresh token:", error)
+
+    // If the refresh token itself is dead (revoked/expired - "invalid_grant"),
+    // clear the stored tokens so the UI prompts the user to reconnect Google
+    // instead of silently showing "no data" forever.
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes("invalid_grant")) {
+      await supabase
+        .from("google_oauth_tokens")
+        .delete()
+        .eq("service", service)
+    }
+
     return null
   }
 }

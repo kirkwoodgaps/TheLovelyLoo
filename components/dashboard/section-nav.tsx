@@ -11,6 +11,7 @@ const sections = [
   { id: "imported-data", label: "Imported Data" },
   { id: "recent-leads", label: "Recent Leads" },
   { id: "analytics", label: "Analytics" },
+  { id: "search-console", label: "Search Console" },
 ]
 
 export function SectionNav() {

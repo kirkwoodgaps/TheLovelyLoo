@@ -153,6 +153,36 @@ export async function fetchSearchConsoleData(
   }
 }
 
+// Resolves the right site URL automatically, then fetches data.
+// Prefers SEARCH_CONSOLE_SITE_URL env var, otherwise auto-detects from the
+// account's verified sites (matching thelovelyloo).
+export async function fetchSearchConsoleDataAuto(
+  startDate: string,
+  endDate: string
+): Promise<SearchConsoleData | null> {
+  const connected = await isConnected("search_console")
+  if (!connected) {
+    return null
+  }
+
+  let siteUrl = process.env.SEARCH_CONSOLE_SITE_URL || ""
+
+  if (!siteUrl) {
+    const sites = await getSearchConsoleSites()
+    if (sites.length === 0) {
+      return null
+    }
+    // Prefer a site that matches the business domain, then a domain property,
+    // then fall back to the first verified site.
+    siteUrl =
+      sites.find((s) => s.toLowerCase().includes("thelovelyloo")) ||
+      sites.find((s) => s.startsWith("sc-domain:")) ||
+      sites[0]
+  }
+
+  return fetchSearchConsoleData(siteUrl, startDate, endDate)
+}
+
 export async function getSearchConsoleSites(): Promise<string[]> {
   const accessToken = await getValidAccessToken("search_console")
   if (!accessToken) {
